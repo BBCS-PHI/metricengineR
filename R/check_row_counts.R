@@ -20,7 +20,7 @@ check_row_counts <- function(
     reference_data
 ) {
   
-  # Validate inputs 
+  # Validate inputs
   
   if(!is.data.frame(df)){
     stop(
@@ -37,7 +37,7 @@ check_row_counts <- function(
   }
   
   
-  # Count rows 
+  # Count rows
   
   input_rows <- nrow(df)
   reference_rows <- nrow(reference_data)
@@ -45,32 +45,36 @@ check_row_counts <- function(
   row_counts_match <- input_rows == reference_rows
   
   
-  # Report result 
+  # Report result
   
   if(row_counts_match){
     
-    message(
-      " PASS: Row counts match: ",
-      input_rows,
-      " rows."
+    cli::cli_alert_success(
+      "Row counts match: {input_rows} rows."
     )
     
   } else {
     
-    message(
-      " WARNING: Row counts do not match. ",
-      "Input: ", input_rows,
-      " rows | Reference: ", reference_rows,
-      " rows | Difference: ", row_difference,
-      ".\n",
-      "This may be expected where multiple input rows are collapsed ",
-      "into a single calculated output row."
+    cli::cli_alert_warning(
+      paste0(
+        "Row counts do not match. ",
+        "Input: {input_rows} rows | ",
+        "Reference: {reference_rows} rows | ",
+        "Difference: {row_difference}."
+      )
+    )
+    
+    cli::cli_alert_info(
+      paste0(
+        "This may be expected where multiple input rows are collapsed ",
+        "into a single calculated output row."
+      )
     )
   }
   
   
   # Return summary invisibly
-  # So the output can also be stored as a variable 
+  # So the output can also be stored as a variable
   
   invisible(
     data.frame(

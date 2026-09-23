@@ -22,7 +22,7 @@ testthat::test_that(
     
     testthat::expect_message(
       result <- check_missing_confidence_intervals(df),
-      "PASS: No missing confidence intervals"
+      "No missing confidence intervals"
     )
     
     testthat::expect_equal(
@@ -203,7 +203,7 @@ testthat::test_that(
     
     testthat::expect_message(
       check_missing_confidence_intervals(df),
-      "WARNING"
+      "Some rows have missing confidence intervals"
     )
   }
 )

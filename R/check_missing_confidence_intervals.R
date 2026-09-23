@@ -60,11 +60,10 @@ check_missing_confidence_intervals <- function(df) {
   
   
   # Report result
-  
   if(nrow(missing_ci_rows) == 0L){
     
-    message(
-      " PASS: No missing confidence intervals."
+    cli::cli_alert_success(
+      "No missing confidence intervals."
     )
     
   } else {
@@ -77,14 +76,18 @@ check_missing_confidence_intervals <- function(df) {
         .data$indicator_id
       )
     
-    message(
-      " WARNING: Some rows have missing confidence intervals. ",
-      "This may be acceptable for value types where confidence intervals ",
-      "are not expected. Indicator ID(s): ",
-      paste(sort(failed_ids), collapse = ", ")
+    cli::cli_alert_warning(
+      paste0(
+        "Some rows have missing confidence intervals. ",
+        "This may be acceptable for value types where confidence intervals ",
+        "are not expected. Indicator ID(s): ",
+        paste(
+          sort(failed_ids),
+          collapse = ", "
+        )
+      )
     )
   }
-  
   
   # Return rows with missing confidence intervals 
   

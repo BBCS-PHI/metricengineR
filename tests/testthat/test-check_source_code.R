@@ -27,7 +27,7 @@ testthat::test_that(
     
     testthat::expect_message(
       result <- check_source_code(df),
-      "PASS: Every indicator has exactly one source code"
+      "No indicators have more than one source code."
     )
     
     testthat::expect_equal(
@@ -152,7 +152,7 @@ testthat::test_that(
 )
 
 
-# Test 6: Warning message is returned
+# Test 6: Error message is returned
 
 testthat::test_that(
   "check_source_code reports indicators with multiple source codes",
@@ -165,7 +165,7 @@ testthat::test_that(
     
     testthat::expect_message(
       check_source_code(df),
-      "WARNING: 1 indicator\\(s\\) have more than one source code"
+      "1 indicator\\(s\\) have more than one source code"
     )
   }
 )

@@ -17,7 +17,7 @@ testthat::test_that(
         df,
         reference_data
       ),
-      "PASS: Row counts match"
+      "Row counts match"
     )
     
     testthat::expect_equal(
@@ -61,7 +61,7 @@ testthat::test_that(
         df,
         reference_data
       ),
-      "WARNING: Row counts do not match"
+      "Row counts do not match"
     )
     
     testthat::expect_equal(

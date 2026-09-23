@@ -78,25 +78,31 @@
 #'     and identifies requests to extract all indicators.
 #' }
 #' @export
-get_indicators_from_sql <- function(conn,
-                                    schema_name,
-                                    table_name,
-                                    database_name = NULL,
-                                    indicator_ids = NULL){
+get_indicators_from_sql <- function(
+    conn,
+    schema_name,
+    table_name,
+    database_name = NULL,
+    indicator_ids = NULL
+) {
   
-  # normalise indicator IDs
+  # Normalise indicator IDs
+  
   ids <- normalise_indicator_ids(indicator_ids)
   
   tryCatch(
-    { 
+    {
+      
       # Create table identifier
+      
       if(is.null(database_name)){
         
         table_id <- DBI::Id(
           schema = schema_name,
           table = table_name
         )
-      } else{
+        
+      } else {
         
         table_id <- DBI::Id(
           catalog = database_name,
@@ -105,45 +111,91 @@ get_indicators_from_sql <- function(conn,
         )
       }
       
+      
       quoted_table <- DBI::dbQuoteIdentifier(
-        conn, table_id
+        conn,
+        table_id
       )
       
-      # Create a base query
-      sql_query <- paste0("SELECT * FROM ", quoted_table)
+      
+      # Create base query
+      
+      sql_query <- paste0(
+        "SELECT * FROM ",
+        quoted_table
+      )
+      
       
       # Build WHERE clause when indicator IDs are provided
-      if (!is.null(ids) && length(ids) > 0) {
+      
+      if(!is.null(ids) && length(ids) > 0L){
         
         quoted_ids <- vapply(
           ids,
-          function(x) {
+          function(x){
             as.character(
-              DBI::dbQuoteLiteral(conn, x)
+              DBI::dbQuoteLiteral(
+                conn,
+                x
+              )
             )
           },
           character(1)
         )
         
-        sql_query <- paste0(sql_query, " WHERE indicator_id IN (",
-                            paste(quoted_ids, collapse = ", "),")")
+        sql_query <- paste0(
+          sql_query,
+          " WHERE indicator_id IN (",
+          paste(
+            quoted_ids,
+            collapse = ", "
+          ),
+          ")"
+        )
+        
+        cli::cli_alert_info(
+          "Extracting {length(ids)} indicator(s) from SQL."
+        )
+        
+      } else {
+        
+        cli::cli_alert_info(
+          "Extracting all indicators from SQL."
+        )
       }
       
-      # Run the query
-      result <- DBI::dbGetQuery(conn, sql_query)
       
-      message("PASS: Indicators successfully extracted from SQL.")
+      # Run query
       
-      message("Total rows extracted: ",nrow(result))
+      result <- DBI::dbGetQuery(
+        conn,
+        sql_query
+      )
+      
+      
+      # Report result
+      
+      cli::cli_alert_success(
+        "Indicators successfully extracted from SQL."
+      )
+      
+      cli::cli_alert_info(
+        "Total rows extracted: {nrow(result)}"
+      )
+      
       
       result
     },
-    error = function(e) {
+    
+    error = function(e){
+      
       stop(
-        "FAIL: Failed to extract indicators from SQL table ",
-        table_name,
-        " - ",
-        conditionMessage(e),
+        paste0(
+          "FAIL: Failed to extract indicators from SQL table ",
+          table_name,
+          " - ",
+          conditionMessage(e)
+        ),
         call. = FALSE
       )
     }

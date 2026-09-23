@@ -41,9 +41,6 @@ get_cvd_indicators <- function(
     delay_seconds = 0.5
 ) {
   
-  message("Starting CVDPREVENT extraction...")
-  
-  
   # Validate delay
   
   if(
@@ -57,6 +54,13 @@ get_cvd_indicators <- function(
       call. = FALSE
     )
   }
+  
+  
+  # Start extraction
+  
+  cli::cli_alert_info(
+    "Starting CVDPREVENT extraction."
+  )
   
   
   # Determine time period and system level combinations
@@ -84,7 +88,10 @@ get_cvd_indicators <- function(
       stop(
         paste0(
           "Columns not found in `combinations`: ",
-          paste(missing_cols, collapse = ", ")
+          paste(
+            missing_cols,
+            collapse = ", "
+          )
         ),
         call. = FALSE
       )
@@ -92,7 +99,9 @@ get_cvd_indicators <- function(
     
     combinations <- combinations |>
       dplyr::select(
-        dplyr::all_of(required_cols)
+        dplyr::all_of(
+          required_cols
+        )
       ) |>
       dplyr::distinct()
     
@@ -117,22 +126,24 @@ get_cvd_indicators <- function(
     
     # Retrieve all valid combinations from CVDPREVENT
     
-    message(
-      "No time periods or system levels supplied. ",
-      "Retrieving all available combinations..."
+    cli::cli_alert_info(
+      paste0(
+        "No time periods or system levels supplied. ",
+        "Retrieving all available combinations."
+      )
     )
     
     combinations <- tryCatch(
-      
       {
         
         cvdprevent::cvd_time_period_system_levels() |>
           janitor::clean_names() |>
           dplyr::select(
             dplyr::all_of(
-              c("time_period_id",
+              c(
+                "time_period_id",
                 "system_level_id"
-                )
+              )
             )
           ) |>
           dplyr::distinct()
@@ -143,7 +154,7 @@ get_cvd_indicators <- function(
         
         stop(
           paste0(
-            "Could not retrieve available CVDPREVENT combinations: ",
+            "FAIL: Could not retrieve available CVDPREVENT combinations: ",
             conditionMessage(e)
           ),
           call. = FALSE
@@ -162,20 +173,28 @@ get_cvd_indicators <- function(
   }
   
   
+  # Report number of combinations
+  
+  cli::cli_alert_info(
+    "Processing {nrow(combinations)} time period/system level combination(s)."
+  )
+  
+  
+  # Create combination progress bar
+  
+  combination_progress <- cli::cli_progress_bar(
+    name = "CVDPREVENT combinations",
+    total = nrow(combinations)
+  )
+  
+  
   # Extract data for each combination
   
   results <- combinations |>
     purrr::pmap(
       function(time_period_id, system_level_id) {
         
-        message(
-          "Period: ",
-          time_period_id,
-          " | System level: ",
-          system_level_id
-        )
-        
-        tryCatch(
+        result <- tryCatch(
           {
             
             ids <- indicator_id
@@ -204,6 +223,19 @@ get_cvd_indicators <- function(
             }
             
             
+            # Create indicator progress bar
+            
+            indicator_progress <- cli::cli_progress_bar(
+              name = paste0(
+                "Period ",
+                time_period_id,
+                " | System level ",
+                system_level_id
+              ),
+              total = length(ids)
+            )
+            
+            
             # Retrieve each indicator
             
             indicator_results <- purrr::map(
@@ -212,13 +244,7 @@ get_cvd_indicators <- function(
                 
                 id <- ids[i]
                 
-                message(
-                  "  Indicator: ",
-                  id
-                )
-                
-                result <- tryCatch(
-                  
+                indicator_result <- tryCatch(
                   {
                     
                     data <- cvdprevent::cvd_indicator_raw_data(
@@ -254,16 +280,33 @@ get_cvd_indicators <- function(
                 )
                 
                 
+                # Update indicator progress
+                
+                cli::cli_progress_update(
+                  id = indicator_progress,
+                  inc = 1
+                )
+                
+                
                 # Pause before next request
                 
                 if(i < length(ids)){
+                  
                   Sys.sleep(
                     delay_seconds
                   )
                 }
                 
-                result
+                
+                indicator_result
               }
+            )
+            
+            
+            # Complete indicator progress
+            
+            cli::cli_progress_done(
+              id = indicator_progress
             )
             
             
@@ -294,8 +337,26 @@ get_cvd_indicators <- function(
             )
           }
         )
+        
+        
+        # Update combination progress
+        
+        cli::cli_progress_update(
+          id = combination_progress,
+          inc = 1
+        )
+        
+        
+        result
       }
     )
+  
+  
+  # Complete combination progress
+  
+  cli::cli_progress_done(
+    id = combination_progress
+  )
   
   
   # Combine successful results
@@ -314,9 +375,28 @@ get_cvd_indicators <- function(
     dplyr::bind_rows()
   
   
-  message(
-    " CVDPREVENT extraction completed."
-  )
+  # Report extraction summary
+  
+  if(nrow(raw_data) > 0L){
+    
+    cli::cli_alert_success(
+      "CVDPREVENT extraction completed successfully with {nrow(raw_data)} row(s) retrieved."
+    )
+    
+  } else {
+    
+    cli::cli_alert_warning(
+      "CVDPREVENT extraction completed but no data were retrieved."
+    )
+  }
+  
+  
+  if(nrow(invalid_combinations) > 0L){
+    
+    cli::cli_alert_warning(
+      "{nrow(invalid_combinations)} CVDPREVENT request(s) could not be retrieved. See `invalid_combinations` for details."
+    )
+  }
   
   
   # Return data and errors

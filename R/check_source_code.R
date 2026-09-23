@@ -51,7 +51,6 @@ check_source_code <- function(
     )
   }
   
-  
   # Identify indicators with multiple source codes
   
   results <- df |>
@@ -77,24 +76,20 @@ check_source_code <- function(
       .data$n_source_codes > 1L
     )
   
-  
   # Report result
   
   if(nrow(results) == 0L){
     
-    message(
-      " PASS: Every indicator has exactly one source code."
+    cli::cli_alert_success(
+      "No indicators have more than one source code."
     )
     
   } else {
     
-    message(
-      " WARNING: ",
-      nrow(results),
-      " indicator(s) have more than one source code."
+    cli::cli_alert_warning(
+      "{nrow(results)} indicator(s) have more than one source code."
     )
   }
-  
   
   # Return problematic indicators
   

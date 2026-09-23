@@ -96,19 +96,20 @@ check_duplicates <- function(
   
   if(nrow(result) > 0L){
     
-    message(
-      " FAIL: Duplicate records found: ",
-      nrow(result),
-      " duplicated key combination(s)."
+    cli::cli_alert_danger(
+      paste0(
+        "Duplicate records found: ",
+        nrow(result),
+        " duplicate key combination(s)."
+      )
     )
     
   } else {
     
-    message(
-      " PASS: No duplicate records found for the specified key columns."
+    cli::cli_alert_success(
+      "No duplicate records found for the specified key columns."
     )
   }
-  
   
   # Return duplicate key combinations
   

@@ -70,23 +70,27 @@ check_invalid_percentages <- function(df) {
         .data$indicator_id
       )
     
-    message(
-      " WARNING: Found percentage values greater than 100 for ",
-      "indicator ID(s): ",
-      paste(sort(failed_indicators), collapse = ", "),
-      ". This may be valid for metrics comparing actual performance against ",
-      "planned or target values, where the actual numerator exceeds the ",
-      "planned denominator. Please review these indicators to confirm that ",
-      "values above 100% are expected."
+    cli::cli_alert_warning(
+      paste0(
+        "Found percentage values greater than 100 for ",
+        "indicator ID(s): ",
+        paste(
+          sort(failed_indicators),
+          collapse = ", "
+        ),
+        ". This may be valid for metrics comparing actual performance against ",
+        "planned or target values, where the actual numerator exceeds the ",
+        "planned denominator. Please review these indicators to confirm that ",
+        "values above 100% are expected."
+      )
     )
     
   } else {
     
-    message(
-      " PASS: No percentage values greater than 100 were found."
+    cli::cli_alert_success(
+      "No percentage values greater than 100 were found."
     )
   }
-  
   
   # Return problematic rows
   

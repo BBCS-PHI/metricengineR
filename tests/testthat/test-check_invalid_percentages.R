@@ -244,7 +244,7 @@ testthat::test_that(
     
     testthat::expect_message(
       check_invalid_percentages(df),
-      "PASS: No percentage values greater than 100 were found"
+      "No percentage values greater than 100 were found"
     )
   }
 )
@@ -264,7 +264,7 @@ testthat::test_that(
     
     testthat::expect_message(
       check_invalid_percentages(df),
-      "WARNING: Found percentage values greater than 100"
+      "Found percentage values greater than 100"
     )
   }
 )

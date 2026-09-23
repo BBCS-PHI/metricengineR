@@ -84,26 +84,79 @@
 #' }
 #'
 #' @export
-replace_indicator_data_in_sql <- function(conn, 
-                                          database_name, 
-                                          schema_name, 
-                                          table_name, 
-                                          data, 
-                                          indicator_ids = "All",
-                                          id_column = "indicator_id") {
+replace_indicator_data_in_sql <- function(
+    conn,
+    database_name,
+    schema_name,
+    table_name,
+    data,
+    indicator_ids = "All",
+    id_column = "indicator_id"
+) {
   
-  # normalise indicator IDs
-  ids <- normalise_indicator_ids(indicator_ids)
+  # Validate data
+  
+  if(!is.data.frame(data)){
+    stop(
+      "`data` must be a data frame.",
+      call. = FALSE
+    )
+  }
+  
+  
+  # Normalise indicator IDs
+  
+  ids <- normalise_indicator_ids(
+    indicator_ids
+  )
+  
+  
+  # Validate selected indicator IDs against supplied data
+  
+  if(!is.null(ids) && length(ids) > 0L){
+    
+    if(!id_column %in% names(data)){
+      stop(
+        paste0(
+          "`data` must contain the ID column `",
+          id_column,
+          "`."
+        ),
+        call. = FALSE
+      )
+    }
+    
+    unexpected_ids <- setdiff(
+      unique(data[[id_column]]),
+      ids
+    )
+    
+    if(length(unexpected_ids) > 0L){
+      stop(
+        paste0(
+          "Data contains indicator ID(s) not included in `indicator_ids`: ",
+          paste(
+            unexpected_ids,
+            collapse = ", "
+          )
+        ),
+        call. = FALSE
+      )
+    }
+  }
+  
   
   tryCatch(
     {
-      # Create and safely quote table/column identifiers
-      if (startsWith(table_name, "#")) {
+      
+      # Create and safely quote table identifier
+      
+      if(startsWith(table_name, "#")){
         
         tbl_id <- table_name
         
-      } else{
-        # Create and safely quote table/column identifiers
+      } else {
+        
         tbl_id <- DBI::Id(
           catalog = database_name,
           schema = schema_name,
@@ -111,39 +164,63 @@ replace_indicator_data_in_sql <- function(conn,
         )
       }
       
-      tbl_sql <- DBI::dbQuoteIdentifier(conn, tbl_id)
-      col_sql <- DBI::dbQuoteIdentifier(conn, id_column)
+      
+      tbl_sql <- DBI::dbQuoteIdentifier(
+        conn,
+        tbl_id
+      )
+      
+      col_sql <- DBI::dbQuoteIdentifier(
+        conn,
+        id_column
+      )
+      
       
       # Build DELETE query
-      sql_query <- paste0("DELETE FROM ", tbl_sql)
       
-      if (!is.null(ids) && length(ids) > 0) {
+      sql_query <- paste0(
+        "DELETE FROM ",
+        tbl_sql
+      )
+      
+      
+      # Add WHERE clause when selected IDs are supplied
+      
+      if(!is.null(ids) && length(ids) > 0L){
         
         quoted_vals <- vapply(
           ids,
-          function(x) {
+          function(x){
             as.character(
-              DBI::dbQuoteLiteral(conn, x)
+              DBI::dbQuoteLiteral(
+                conn,
+                x
+              )
             )
           },
           character(1)
         )
         
-        # Build WHERE clause when IDs are provided
         sql_query <- paste0(
           sql_query,
           " WHERE ",
           col_sql,
           " IN (",
-          paste(quoted_vals, collapse = ", "),
+          paste(
+            quoted_vals,
+            collapse = ", "
+          ),
           ")"
         )
       }
       
-      # Delete and insert within a single transaction
-      DBI::dbWithTransaction( # Protects the database from ending up half-updated
+      
+      # Delete and insert within one transaction
+      
+      DBI::dbWithTransaction(
         conn,
         {
+          
           DBI::dbExecute(
             conn,
             sql_query
@@ -158,30 +235,36 @@ replace_indicator_data_in_sql <- function(conn,
         }
       )
       
-      # Success messages
-      if (is.null(ids) || length(ids) == 0) { # All rows are deleted when "All" is supplied (normalised "All" will be NULL)
+      
+      # Report success
+      
+      table_display <- as.character(
+        tbl_sql
+      )
+      
+      if(is.null(ids) || length(ids) == 0L){
         
-        message(
-          "PASS: All rows deleted and new data appended to ",
-          tbl_sql,
-          "."
+        cli::cli_alert_success(
+          "All rows deleted and new data appended to {table_display}."
         )
         
       } else {
         
-        message(
-          "Deleted and replaced data for selected indicator_ids in ",
-          tbl_sql,
-          "."
+        cli::cli_alert_success(
+          "Deleted and replaced data for selected indicator IDs in {table_display}."
         )
       }
     },
-    error = function(e) {
+    
+    error = function(e){
+      
       stop(
-        "FAIL: Failed to insert data into SQL table ",
-        table_name,
-        " - ",
-        conditionMessage(e),
+        paste0(
+          "FAIL: Failed to replace data in SQL table ",
+          table_name,
+          " - ",
+          conditionMessage(e)
+        ),
         call. = FALSE
       )
     }

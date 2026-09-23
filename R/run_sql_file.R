@@ -38,27 +38,48 @@
 #' @export
 run_sql_file <- function(conn, path) {
   
+  if(!file.exists(path)){
+    stop(
+      "FAIL: SQL file does not exist: ",
+      path,
+      call. = FALSE
+    )
+  }
+  
   tryCatch(
     {
-      if(!file.exists(path)){
-        stop(
-          "SQL file does not exist: ", path, call. = FALSE
+      
+      sql_text <- paste(
+        readLines(
+          path,
+          warn = FALSE
+        ),
+        collapse = "\n"
+      )
+      
+      DBI::dbExecute(
+        conn,
+        sql_text
+      )
+      
+      cli::cli_alert_success(
+        "SQL script successfully run: {basename(path)}"
         )
-      }
-      
-      sql_text <- paste(readLines(path, warn = FALSE), collapse = "\n")
-      
-      DBI::dbExecute(conn, sql_text)
-      
-      message("PASS: SQL script successfully run: ", basename(path))
     },
+    
     error = function(e){
+      
       stop(
-        "FAIL: SQL script failed: ", basename(path), " - ", conditionMessage(e), call. = FALSE
+        paste0(
+          "FAIL: SQL script failed: ",
+          basename(path),
+          " - ",
+          conditionMessage(e)
+        ),
+        call. = FALSE
       )
     }
   )
 }
-
 
 

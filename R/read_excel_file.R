@@ -62,25 +62,31 @@ read_excel_file <- function(
   # Read Excel file
   file_name <- basename(file_path)
   
-  message("Processing file: ", file_name)
+  cli::cli_alert_info(
+    "Processing Excel file: {file_name}"
+  )
   
   result <- tryCatch(
     {
+      
       df <- readxl::read_excel(
         path = file_path,
         sheet = sheet_name
       ) |>
-        dplyr::mutate(source_file = file_name)
+        dplyr::mutate(
+          source_file = file_name
+          )
       
-      message("PASS: Excel file processed: ", file_name,  " ")
+      cli::cli_alert_success(
+        "Excel file processed successfully: {file_name}"
+      )
       
       df
     },
     error = function(e) {
       
-      warning(
-        "WARNING: Could not process ", file_name,
-        ": ", conditionMessage(e)
+      cli::cli_alert_warning(
+        "Could not process {file_name}: {conditionMessage(e)}"
       )
       
       NULL

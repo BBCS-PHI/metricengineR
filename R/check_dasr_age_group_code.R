@@ -78,18 +78,18 @@ check_dasr_age_group_code <- function(df) {
   
   if(nrow(failures) == 0L){
     
-    message(
-      "PASS: Each DASR indicator has one unique age_group_code."
+    cli::cli_alert_success(
+      "Each DASR indicator has one unique age_group_code."
     )
     
   } else {
     
-    message(
-      " WARNING: ",
-      nrow(failures),
-      " DASR indicator(s) have more than one age_group_code."
+    cli::cli_alert_danger(
+      paste0(
+        nrow(failures),
+        " DASR indicator(s) have more than one age_group_code."
+      )
     )
-    
   }
   
   

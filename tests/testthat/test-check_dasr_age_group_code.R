@@ -12,7 +12,7 @@ testthat::test_that(
     
     testthat::expect_message(
       result <- check_dasr_age_group_code(df),
-      "PASS: Each DASR indicator has one unique age_group_code"
+      "Each DASR indicator has one unique age_group_code"
     )
     
     testthat::expect_equal(
@@ -37,7 +37,7 @@ testthat::test_that(
     
     testthat::expect_message(
       result <- check_dasr_age_group_code(df),
-      "WARNING: 1 DASR indicator"
+      "1 DASR indicator\\(s\\) have more than one age_group_code"
     )
     
     testthat::expect_equal(
@@ -159,7 +159,7 @@ testthat::test_that(
     
     testthat::expect_message(
       result <- check_dasr_age_group_code(df),
-      "PASS"
+      "Each DASR indicator has one unique age_group_code"
     )
     
     testthat::expect_equal(

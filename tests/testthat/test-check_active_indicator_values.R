@@ -65,7 +65,7 @@ testthat::test_that(
         df,
         metadata
       ),
-      "PASS"
+      "All active indicators have a populated indicator_value"
     )
     
     testthat::expect_equal(
@@ -397,10 +397,10 @@ testthat::test_that(
 )
 
 
-# Test 12: Warning message is produced 
+# Test 12: Error message is produced 
 
 testthat::test_that(
-  "check_active_indicator_values gives warning message for failures",
+  "check_active_indicator_values gives error message for failures",
   {
     
     df <- data.frame(
@@ -420,7 +420,7 @@ testthat::test_that(
         df,
         metadata
       ),
-      "WARNING"
+      "Found active indicators with unexpected missing indicator_value"
     )
   }
 )

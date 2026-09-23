@@ -281,7 +281,7 @@ testthat::test_that(
     
     testthat::expect_message(
       check_duplicates(df),
-      "PASS: No duplicate records found"
+      "No duplicate records found"
     )
   }
 )
@@ -297,7 +297,7 @@ testthat::test_that(
     
     testthat::expect_message(
       check_duplicates(df),
-      "FAIL: Duplicate records found: 1 duplicated key combination"
+      "Duplicate records found: 1 duplicate key combination"
     )
   }
 )

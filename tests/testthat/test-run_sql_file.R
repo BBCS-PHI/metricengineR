@@ -48,11 +48,12 @@ test_that("run_sql_file stops when the SQL file does not exist", {
   conn <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
   on.exit(DBI::dbDisconnect(conn))
   
-  expect_error(
+  testthat::expect_error(
     run_sql_file(
       conn,
       "file_that_does_not_exist.sql"
     ),
-    "SQL script failed"
+    "SQL file does not exist"
   )
+  
 })

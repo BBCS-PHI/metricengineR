@@ -297,7 +297,7 @@ testthat::test_that(
     
     testthat::expect_message(
       check_missing_values(df),
-      "PASS: No missing values in the checked columns"
+      "No missing values in the checked columns"
     )
   }
 )
@@ -313,7 +313,7 @@ testthat::test_that(
     
     testthat::expect_message(
       check_missing_values(df),
-      "WARNING: Found 3 row"
+      "Found 3 row"
     )
   }
 )

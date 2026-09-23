@@ -207,13 +207,11 @@ testthat::test_that(
       path = test_file
     )
     
-    testthat::expect_warning(
-      
+    testthat::expect_message(
       result <- read_excel_file(
         file_path = test_file,
         sheet_name = "SheetDoesNotExist"
       ),
-      
       "Could not process"
     )
     

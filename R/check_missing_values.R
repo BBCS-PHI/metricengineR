@@ -115,8 +115,8 @@ check_missing_values <- function(
   
   if(nrow(missing_rows) == 0L){
     
-    message(
-      " PASS: No missing values in the checked columns."
+    cli::cli_alert_success(
+      "No missing values in the checked columns."
     )
     
   } else {
@@ -125,13 +125,18 @@ check_missing_values <- function(
       colSums(missing_matrix) > 0L
     ]
     
-    message(
-      " WARNING: Found ",
-      nrow(missing_rows),
-      " row(s) with missing values. ",
-      "Affected column(s): ",
-      paste(columns_with_missing, collapse = ", "),
-      "."
+    cli::cli_alert_warning(
+      paste0(
+        "Found ",
+        nrow(missing_rows),
+        " row(s) with missing values. ",
+        "Affected column(s): ",
+        paste(
+          columns_with_missing,
+          collapse = ", "
+        ),
+        "."
+      )
     )
   }
   

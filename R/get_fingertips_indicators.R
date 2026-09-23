@@ -47,7 +47,12 @@ get_fingertips_indicators <- function(
     )
   }
   
-  indicator_ids <- as.character(indicator_ids)
+  
+  # Prepare indicator IDs
+  
+  indicator_ids <- unique(
+    as.character(indicator_ids)
+  )
   
   
   # Fingertips API URL
@@ -66,6 +71,21 @@ get_fingertips_indicators <- function(
   )
   
   names(results_list) <- indicator_ids
+  
+  
+  # Report start of extraction
+  
+  cli::cli_alert_info(
+    "Retrieving {length(indicator_ids)} Fingertips indicator(s)."
+  )
+  
+  
+  # Create progress bar
+  
+  progress_id <- cli::cli_progress_bar(
+    name = "Retrieving Fingertips indicators",
+    total = length(indicator_ids)
+  )
   
   
   # Retrieve each indicator
@@ -102,38 +122,49 @@ get_fingertips_indicators <- function(
           stringsAsFactors = FALSE
         )
         
-        message(
-          "PASS Successfully retrieved indicator: ",
-          id
-        )
-        
         data
       },
       
       error = function(e){
         
-        message(
-          "FAIL: Could not retrieve indicator ",
-          id,
-          ": ",
-          conditionMessage(e)
+        cli::cli_alert_warning(
+          "Could not retrieve indicator {id}: {conditionMessage(e)}"
         )
         
         NULL
       }
     )
     
-    results_list[[id]] <- result
+    
+    # Store result
+    
+    results_list[[i]] <- result
+    
+    
+    # Update progress bar
+    
+    cli::cli_progress_update(
+      id = progress_id,
+      inc = 1
+    )
     
     
     # Pause before the next API request
     
     if(i < length(indicator_ids)){
+      
       Sys.sleep(
         delay_seconds
       )
     }
   }
+  
+  
+  # Complete progress bar
+  
+  cli::cli_progress_done(
+    id = progress_id
+  )
   
   
   # Remove failed requests
@@ -147,12 +178,40 @@ get_fingertips_indicators <- function(
   ]
   
   
+  # Calculate retrieval summary
+  
+  successful_count <- length(
+    successful_results
+  )
+  
+  failed_count <- length(indicator_ids) -
+    successful_count
+  
+  
   # Return empty data frame if all requests failed
   
-  if(length(successful_results) == 0L){
+  if(successful_count == 0L){
+    
+    cli::cli_alert_warning(
+      "No Fingertips indicators were successfully retrieved."
+    )
     
     return(
       data.frame()
+    )
+  }
+  
+  
+  # Report successful extraction
+  
+  cli::cli_alert_success(
+    "Successfully retrieved {successful_count} of {length(indicator_ids)} Fingertips indicator(s)."
+  )
+  
+  if(failed_count > 0L){
+    
+    cli::cli_alert_warning(
+      "{failed_count} indicator request(s) failed."
     )
   }
   
