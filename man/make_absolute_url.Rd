@@ -7,14 +7,33 @@
 make_absolute_url(link, base_url)
 }
 \arguments{
-\item{link}{Character vector containing URLs or relative links.}
+\item{link}{Character vector containing absolute or relative URLs to resolve.
+For example, \code{"/data-and-information/publications/test"}.}
 
-\item{base_url}{Base URL used to resolve relative links.}
+\item{base_url}{Base URL used to resolve relative links. This can be the
+website root or the full URL of the page from which the links were
+extracted.}
 }
 \value{
 A character vector containing absolute URLs.
 }
 \description{
-Converts a relative URL into an absolute URL using a supplied base URL.
-Absolute URLs are returned unchanged.
+Converts relative or root-relative URLs into absolute URLs using a supplied
+base URL. URLs that are already absolute are returned unchanged.
+}
+\details{
+This helper is useful when extracting links from web pages where the \code{href}
+attribute may contain either a complete URL or a relative path.
+}
+\examples{
+make_absolute_url(
+  link = "/data-and-information/publications/test",
+  base_url = "https://digital.nhs.uk"
+)
+
+make_absolute_url(
+  link = "https://digital.nhs.uk/test",
+  base_url = "https://digital.nhs.uk"
+)
+
 }

@@ -7,15 +7,39 @@
 get_child_links(parent_url, publication_pattern)
 }
 \arguments{
-\item{parent_url}{URL of the parent web page.}
+\item{parent_url}{URL of the parent publication page containing links to
+individual publication pages.}
 
-\item{publication_pattern}{Regular expression used to identify publication
-links.}
+\item{publication_pattern}{Regular expression used to identify the required
+publication links from all links found on the parent page.}
 }
 \value{
 A character vector containing unique matching publication URLs.
+Relative links are converted to absolute URLs and trailing slashes are
+removed.
 }
 \description{
-Retrieves links from a parent web page that match a supplied publication
-pattern and converts them to absolute URLs.
+Retrieves publication links from a parent web page that match a supplied
+regular expression and converts them to absolute URLs.
+}
+\details{
+This is useful for publication landing pages that contain links to multiple
+reporting periods, such as monthly NHS Digital publication pages.
+}
+\examples{
+\dontrun{
+publication_links <- get_child_links(
+  parent_url = paste0(
+    "https://digital.nhs.uk/data-and-information/publications/",
+    "statistical/community-services-statistics-for-children-young-people-and-adults"
+  ),
+  publication_pattern = paste0(
+    "community-services-statistics-for-children-young-people-and-adults/",
+    "[a-z]+-[0-9]{4}/?$"
+  )
+)
+
+publication_links
+}
+
 }
