@@ -16,18 +16,22 @@ Imports:
     cvdprevent,
     DBI,
     dplyr,
+    fs,
     httr,
     janitor,
     lubridate,
     PHEindicatormethods,
     purrr,
+    readr,
     readxl,
     rlang,
+    rvest,
     stats,
     stringr,
     tibble,
     tidyr,
-    utils
+    utils,
+    xml2
 Suggests: 
     curl,
     odbc,

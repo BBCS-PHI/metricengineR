@@ -63,6 +63,11 @@ get_cvd_indicators <- function(
   )
   
   
+  # Initialise invalid requested combinations
+  
+  invalid_requested <- tibble::tibble()
+  
+  
   # Determine time period and system level combinations
   
   if(!is.null(combinations)){
@@ -111,12 +116,56 @@ get_cvd_indicators <- function(
     !is.null(system_level_id)
   ){
     
-    # Create combinations from supplied IDs
+    # Create requested combinations 
     
-    combinations <- tidyr::expand_grid(
+    requested_combinations <- tidyr::expand_grid(
       time_period_id = time_period_id,
       system_level_id = system_level_id
     )
+    
+    
+    # Retrieve valid CVDPREVENT combinations
+    
+    valid_combinations <- cvdprevent::cvd_time_period_system_levels() |> 
+      janitor::clean_names() |> 
+      dplyr::select(
+        "time_period_id",
+        "system_level_id"
+      ) |> 
+      dplyr::distinct()
+    
+    
+    # Keep only valid requested combinations
+    
+    combinations <- requested_combinations |> 
+      dplyr::semi_join(
+        valid_combinations,
+        by = c(
+          "time_period_id",
+          "system_level_id"
+        )
+      )
+    
+    
+    # Identify invalid requested combinations
+    
+    invalid_requested <- requested_combinations |> 
+      dplyr::anti_join(
+        valid_combinations,
+        by = c(
+          "time_period_id",
+          "system_level_id"
+        )
+      )
+    
+    
+    if(nrow(invalid_requested) > 0L){
+      
+      cli::cli_alert_warning(
+        "{nrow(invalid_requested)} requested combination(s) are not available in CVDPREVENT and will be skipped."
+      )
+      
+    }
     
     
   } else if(
@@ -173,10 +222,20 @@ get_cvd_indicators <- function(
   }
   
   
+  # Get combination number 
+  
+  n_combinations <- nrow(combinations)
+  
+  combinations <- combinations |> 
+    dplyr::mutate(
+      combination_number = dplyr::row_number()
+    )
+  
+  
   # Report number of combinations
   
   cli::cli_alert_info(
-    "Processing {nrow(combinations)} time period/system level combination(s)."
+    "Processing {n_combinations} time period/system level combination(s)."
   )
   
   
@@ -184,7 +243,7 @@ get_cvd_indicators <- function(
   
   combination_progress <- cli::cli_progress_bar(
     name = "CVDPREVENT combinations",
-    total = nrow(combinations)
+    total = n_combinations
   )
   
   
@@ -192,7 +251,11 @@ get_cvd_indicators <- function(
   
   results <- combinations |>
     purrr::pmap(
-      function(time_period_id, system_level_id) {
+      function(
+    time_period_id,
+    system_level_id,
+    combination_number
+      ) {
         
         result <- tryCatch(
           {
@@ -227,7 +290,11 @@ get_cvd_indicators <- function(
             
             indicator_progress <- cli::cli_progress_bar(
               name = paste0(
-                "Period ",
+                "Combination ",
+                combination_number,
+                " of ",
+                n_combinations,
+                " | Period ",
                 time_period_id,
                 " | System level ",
                 system_level_id
@@ -367,12 +434,30 @@ get_cvd_indicators <- function(
     dplyr::bind_rows()
   
   
-  # Combine errors
+  # Combine errors from extraction
   
-  invalid_combinations <- results |>
-    purrr::map("error") |>
-    purrr::compact() |>
+  invalid_combinations <- results |> 
+    purrr::map("error") |> 
+    purrr::compact() |> 
     dplyr::bind_rows()
+  
+  
+  # Add invalid requested combinations
+  
+  if(nrow(invalid_requested) > 0L){
+    
+    invalid_requested <- invalid_requested |>
+      dplyr::mutate(
+        indicator_id = NA_integer_,
+        error_message =
+          "Requested time period/system level combination is not available in CVDPREVENT."
+      )
+    
+    invalid_combinations <- dplyr::bind_rows(
+      invalid_requested,
+      invalid_combinations
+    )
+  }
   
   
   # Report extraction summary
