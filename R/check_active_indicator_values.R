@@ -3,7 +3,7 @@
 #' Checks that active indicators have a populated `indicator_value`.
 #'
 #' @param df A data frame containing indicator results, including
-#'   `indicator_id`, `indicator_value`, `value_type_code`, and `denominator`.
+#'   `indicator_id`, `indicator_value`, `value_type_code`, `numerator` and `denominator`.
 #' @param metadata A data frame containing `indicator_id` and `status_code`.
 #'
 #' @return A data frame containing active indicator rows with unexpected
@@ -13,7 +13,8 @@
 #' Indicators with `status_code == 1` are treated as active.
 #'
 #' Missing `indicator_value` is allowed for value types `2`, `9`, and `10`
-#' when the denominator is missing or equal to zero.
+#' when the numerator or denominator is missing, or when the denominator
+#' is equal to zero.
 #'
 #' @export
 check_active_indicator_values <- function(df, metadata) {
@@ -39,6 +40,7 @@ check_active_indicator_values <- function(df, metadata) {
     "indicator_id",
     "indicator_value",
     "value_type_code",
+    "numerator",
     "denominator"
   )
   
@@ -102,8 +104,10 @@ check_active_indicator_values <- function(df, metadata) {
       !(
         .data$value_type_code %in% c(2L, 9L, 10L) & # Percentage, percentage change, and percentage point difference
           (
+            is.na(.data$numerator) |
             is.na(.data$denominator) |
-              .data$denominator == 0
+              .data$denominator == 0 
+              
           )
       )
     )
