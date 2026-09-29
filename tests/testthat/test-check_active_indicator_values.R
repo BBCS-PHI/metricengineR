@@ -6,6 +6,7 @@ create_test_active_indicator_data <- function() {
     indicator_id = c(101L, 102L, 103L, 104L),
     indicator_value = c(10, NA, NA, 40),
     value_type_code = c(1L, 1L, 2L, 1L),
+    numerator = c(10, 20, 30, 40),
     denominator = c(100, 200, 0, 400)
   )
 }
@@ -86,6 +87,7 @@ testthat::test_that(
       indicator_id = 101L,
       indicator_value = NA_real_,
       value_type_code = 1L,
+      numerator = 10,
       denominator = 100
     )
     
@@ -119,6 +121,7 @@ testthat::test_that(
       indicator_id = 101L,
       indicator_value = NA_real_,
       value_type_code = 2L,
+      numerator = 10,
       denominator = 0
     )
     
@@ -152,6 +155,7 @@ testthat::test_that(
       indicator_id = 101L,
       indicator_value = NA_real_,
       value_type_code = 2L,
+      numerator = 10,
       denominator = NA_real_
     )
     
@@ -185,6 +189,7 @@ testthat::test_that(
       indicator_id = 101L,
       indicator_value = NA_real_,
       value_type_code = 9L,
+      numerator = 10,
       denominator = 0
     )
     
@@ -218,6 +223,7 @@ testthat::test_that(
       indicator_id = 101L,
       indicator_value = NA_real_,
       value_type_code = 10L,
+      numerator = 10,
       denominator = 0
     )
     
@@ -255,6 +261,7 @@ testthat::test_that(
         NA_real_
       ),
       value_type_code = c(2L, 9L, 10L),
+      numerator = c(10, 20, 30),
       denominator = c(100, 100, 100)
     )
     
@@ -293,6 +300,7 @@ testthat::test_that(
       indicator_id = 101L,
       indicator_value = NA_real_,
       value_type_code = 1L,
+      numerator = 10,
       denominator = 0
     )
     
@@ -326,6 +334,7 @@ testthat::test_that(
       indicator_id = 101L,
       indicator_value = NA_real_,
       value_type_code = NA_integer_,
+      numerator = 10,
       denominator = 100
     )
     
@@ -368,6 +377,7 @@ testthat::test_that(
         30
       ),
       value_type_code = c(1L, 1L, 1L),
+      numerator = c(10, 20, 30),
       denominator = c(100, 200, 300)
     )
     
@@ -407,6 +417,7 @@ testthat::test_that(
       indicator_id = 101L,
       indicator_value = NA_real_,
       value_type_code = 1L,
+      numerator = 10,
       denominator = 100
     )
     
@@ -509,6 +520,134 @@ testthat::test_that(
         metadata
       ),
       "Missing required columns in `metadata`: status_code"
+    )
+  }
+)
+
+# Test 17: Missing numerator is allowed for calculation value types
+
+testthat::test_that(
+  "check_active_indicator_values allows missing value when numerator is missing",
+  {
+    
+    df <- data.frame(
+      indicator_id = c(101L, 102L, 103L),
+      indicator_value = c(
+        NA_real_,
+        NA_real_,
+        NA_real_
+      ),
+      value_type_code = c(2L, 9L, 10L),
+      numerator = c(
+        NA_real_,
+        NA_real_,
+        NA_real_
+      ),
+      denominator = c(100, 100, 100)
+    )
+    
+    metadata <- data.frame(
+      indicator_id = c(101L, 102L, 103L),
+      status_code = c(1L, 1L, 1L)
+    )
+    
+    suppressMessages(
+      result <- check_active_indicator_values(
+        df,
+        metadata
+      )
+    )
+    
+    testthat::expect_equal(
+      nrow(result),
+      0L
+    )
+  }
+)
+
+# Test 18: Zero numerator is a valid calculation input
+
+testthat::test_that(
+  "check_active_indicator_values does not treat zero numerator as missing",
+  {
+    
+    df <- data.frame(
+      indicator_id = c(101L, 102L, 103L),
+      indicator_value = c(
+        NA_real_,
+        NA_real_,
+        NA_real_
+      ),
+      value_type_code = c(2L, 9L, 10L),
+      numerator = c(0, 0, 0),
+      denominator = c(100, 100, 100)
+    )
+    
+    metadata <- data.frame(
+      indicator_id = c(101L, 102L, 103L),
+      status_code = c(1L, 1L, 1L)
+    )
+    
+    suppressMessages(
+      result <- check_active_indicator_values(
+        df,
+        metadata
+      )
+    )
+    
+    testthat::expect_equal(
+      nrow(result),
+      3L
+    )
+    
+    testthat::expect_equal(
+      result$indicator_id,
+      c(101L, 102L, 103L)
+    )
+  }
+)
+
+# Test 19: Missing numerator and denominator are allowed
+
+testthat::test_that(
+  "check_active_indicator_values allows missing value when numerator and denominator are missing",
+  {
+    
+    df <- data.frame(
+      indicator_id = c(101L, 102L, 103L),
+      indicator_value = c(
+        NA_real_,
+        NA_real_,
+        NA_real_
+      ),
+      value_type_code = c(2L, 9L, 10L),
+      numerator = c(
+        NA_real_,
+        NA_real_,
+        NA_real_
+      ),
+      denominator = c(
+        NA_real_,
+        NA_real_,
+        NA_real_
+      )
+    )
+    
+    metadata <- data.frame(
+      indicator_id = c(101L, 102L, 103L),
+      status_code = c(1L, 1L, 1L)
+    )
+    
+    suppressMessages(
+      result <- check_active_indicator_values(
+        df,
+        metadata
+      )
+    )
+    
+    testthat::expect_equal(
+      nrow(result),
+      0L
     )
   }
 )
