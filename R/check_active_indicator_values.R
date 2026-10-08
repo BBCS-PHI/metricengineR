@@ -3,8 +3,10 @@
 #' Checks that active indicators have a populated `indicator_value`.
 #'
 #' @param df A data frame containing indicator results, including
-#'   `indicator_id`, `indicator_value`, `value_type_code`, `numerator` and `denominator`.
-#' @param metadata A data frame containing `indicator_id` and `status_code`.
+#'   `indicator_id`, `indicator_value`, `value_type_code`, `numerator`,
+#'   and `denominator`.
+#' @param metadata A data frame containing `indicator_id`, `status_code`,
+#'   and `precalculated`.
 #'
 #' @return A data frame containing active indicator rows with unexpected
 #'   missing `indicator_value`. Returns an empty data frame if no issues are found.
@@ -15,6 +17,9 @@
 #' Missing `indicator_value` is allowed for value types `2`, `9`, and `10`
 #' when the numerator or denominator is missing, or when the denominator
 #' is equal to zero.
+#'
+#' Missing `indicator_value` is also allowed for precalculated indicators,
+#' as published values may be unavailable or suppressed at source.
 #'
 #' @export
 check_active_indicator_values <- function(df, metadata) {
@@ -62,7 +67,8 @@ check_active_indicator_values <- function(df, metadata) {
   
   required_metadata_cols <- c(
     "indicator_id",
-    "status_code"
+    "status_code",
+    "precalculated"
   )
   
   missing_metadata_cols <- setdiff(
@@ -95,19 +101,37 @@ check_active_indicator_values <- function(df, metadata) {
     )
   
   
+  # Identify precalculated indicators
+  
+  precalculated_ids <- metadata |>
+    dplyr::filter(
+      .data$precalculated == "Yes"
+    ) |>
+    dplyr::distinct(
+      .data$indicator_id
+    ) |>
+    dplyr::pull(
+      .data$indicator_id
+    )
+  
+  
   # Identify unexpected missing indicator values 
   
   failures <- df |>
     dplyr::filter(
       .data$indicator_id %in% active_ids,
       is.na(.data$indicator_value),
+      
+      # Precalculated values may be unavailable or suppressed
+      !(.data$indicator_id %in% precalculated_ids),
+      
+      # Expected missing calculated values
       !(
-        .data$value_type_code %in% c(2L, 9L, 10L) & # Percentage, percentage change, and percentage point difference
+        .data$value_type_code %in% c(2L, 9L, 10L) &
           (
             is.na(.data$numerator) |
-            is.na(.data$denominator) |
-              .data$denominator == 0 
-              
+              is.na(.data$denominator) |
+              .data$denominator == 0
           )
       )
     )
@@ -142,6 +166,7 @@ check_active_indicator_values <- function(df, metadata) {
       )
     )
   }
+  
   
   # Return failing rows 
   
