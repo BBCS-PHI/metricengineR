@@ -6,21 +6,23 @@
 \usage{
 get_resource_link(
   publication_url,
-  dataset_suffix = "/datasets",
   resource_text,
+  dataset_pattern = "/datasets[^/]*/?$",
   period_pattern = "[a-z]+-[0-9]{4}/?$",
   match_period = TRUE,
-  file_pattern = "\\\\.zip($|\\\\?)"
+  file_pattern = "\\\\.(zip|csv)($|\\\\?)"
 )
 }
 \arguments{
 \item{publication_url}{URL of the publication page.}
 
-\item{dataset_suffix}{Suffix appended to the publication URL to locate the
-dataset page. Defaults to \code{"/datasets"}.}
-
 \item{resource_text}{Text used to identify the required resource link.
 Matching is case-insensitive.}
+
+\item{dataset_pattern}{Regular expression used to identify the dataset page
+from links found on the publication page. Defaults to
+\code{"/datasets[^/]*/?$"}, allowing dataset pages such as \verb{/datasets},
+\verb{/datasets2}, and \verb{/datasets---at}.}
 
 \item{period_pattern}{Regular expression used to extract the reporting
 period from the publication URL. Defaults to
@@ -30,7 +32,8 @@ period from the publication URL. Defaults to
 the reporting period extracted from \code{publication_url}.}
 
 \item{file_pattern}{Regular expression used to identify the required file
-type. Defaults to ZIP files using \code{"\\\\.zip($|\\\\?)"}.}
+type. Defaults to ZIP or CSV files using
+\code{"\\\\.(zip|csv)($|\\\\?)"}.}
 }
 \value{
 A character value containing the resource URL, or \code{NA_character_}
@@ -47,14 +50,10 @@ resource_url <- get_resource_link(
     "statistical/community-services-statistics-for-children-young-people-and-adults/",
     "june-2026"
   ),
-  dataset_suffix = "/datasets",
   resource_text = "CSV Data \\\\(as ZIP\\\\)",
   period_pattern = "[a-z]+-[0-9]{4}/?$",
   match_period = TRUE,
-  file_pattern = "\\\\.zip($|\\\\?)"
+  file_pattern = "\\\\.(zip|csv)($|\\\\?)"
 )
-
-resource_url
 }
-
 }
