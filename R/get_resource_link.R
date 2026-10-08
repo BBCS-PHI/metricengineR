@@ -3,8 +3,10 @@
 #' Retrieves a resource download link from a publication dataset page.
 #'
 #' @param publication_url URL of the publication page.
-#' @param dataset_suffix Suffix appended to the publication URL to locate the
-#'   dataset page. Defaults to `"/datasets"`.
+#' @param dataset_pattern Regular expression used to identify the dataset page
+#'   from links found on the publication page. Defaults to
+#'   `"/datasets[^/]*/?$"`, allowing dataset pages such as `/datasets`,
+#'   `/datasets2`, and `/datasets---at`.
 #' @param resource_text Text used to identify the required resource link.
 #'   Matching is case-insensitive.
 #' @param period_pattern Regular expression used to extract the reporting
@@ -13,8 +15,9 @@
 #' @param match_period Logical. If `TRUE`, the resource link text must contain
 #'   the reporting period extracted from `publication_url`.
 #' @param file_pattern Regular expression used to identify the required file
-#'   type. Defaults to ZIP files using `"\\.zip($|\\?)"`.
-#'
+#'   type. Defaults to ZIP or CSV files using
+#'   `"\\.(zip|csv)($|\\?)"`.
+#'   
 #' @return A character value containing the resource URL, or `NA_character_`
 #'   if no matching resource is found.
 #'
@@ -26,24 +29,20 @@
 #'     "statistical/community-services-statistics-for-children-young-people-and-adults/",
 #'     "june-2026"
 #'   ),
-#'   dataset_suffix = "/datasets",
 #'   resource_text = "CSV Data \\(as ZIP\\)",
 #'   period_pattern = "[a-z]+-[0-9]{4}/?$",
 #'   match_period = TRUE,
-#'   file_pattern = "\\.zip($|\\?)"
+#'   file_pattern = "\\.(zip|csv)($|\\?)"
 #' )
-#'
-#' resource_url
 #' }
-#'
 #' @export
 get_resource_link <- function(
     publication_url,
-    dataset_suffix = "/datasets",
     resource_text,
+    dataset_pattern = "/datasets[^/]*/?$",
     period_pattern = "[a-z]+-[0-9]{4}/?$",
     match_period = TRUE,
-    file_pattern = "\\.zip($|\\?)"
+    file_pattern = "\\.(zip|csv)($|\\?)"
 ) {
   
   # Validate inputs
@@ -83,15 +82,75 @@ get_resource_link <- function(
     )
   }
   
+  if(
+    !is.character(dataset_pattern) ||
+    length(dataset_pattern) != 1L ||
+    is.na(dataset_pattern) ||
+    !nzchar(dataset_pattern)
+  ){
+    stop(
+      "`dataset_pattern` must be a single non-empty character value.",
+      call. = FALSE
+    )
+  }
   
-  # Build dataset URL
+  # Read publication page
   
-  dataset_url <- paste0(
-    stringr::str_remove(
-      publication_url,
-      "/$"
+  cli::cli_alert_info(
+    "Finding dataset page: {publication_url}"
+  )
+  
+  publication_page <- tryCatch(
+    rvest::read_html(
+      publication_url
     ),
-    dataset_suffix
+    error = function(e){
+      cli::cli_alert_warning(
+        "Could not read publication page: {publication_url}"
+      )
+      return(NULL)
+    }
+  )
+  
+  if(is.null(publication_page)){
+    return(NA_character_)
+  }
+  
+  
+  # Find dataset page
+  # Get all dataset download links
+  
+  dataset_links <- publication_page |>
+    rvest::html_elements("a") |>
+    rvest::html_attr("href") |>
+    stats::na.omit() |>
+    unique()
+  
+  # Detect dataset links using the supplied dataset patterm
+  dataset_links <- dataset_links[
+    stringr::str_detect(
+      dataset_links,
+      dataset_pattern
+    )
+  ]
+  
+  # Return NA if no dataset page can be found
+  
+  if(length(dataset_links) == 0L){
+    
+    cli::cli_alert_warning(
+      "No dataset page found for: {publication_url}"
+    )
+    
+    return(NA_character_)
+  }
+  
+  
+  # Convert dataset link to absolute URL
+  
+  dataset_url <- make_absolute_url(
+    dataset_links[[1]],
+    publication_url
   )
   
   

@@ -9,10 +9,10 @@ get_publication_data(
   publication_pattern,
   resource_text,
   download_folder,
-  dataset_suffix = "/datasets",
+  dataset_pattern = "/datasets[^/]*/?$",
   period_pattern = "[a-z]+-[0-9]{4}/?$",
   match_period = TRUE,
-  file_pattern = "\\\\.zip($|\\\\?)",
+  file_pattern = "\\\\.(zip|csv)($|\\\\?)",
   all_columns_character = TRUE
 )
 }
@@ -29,8 +29,9 @@ resource on each publication dataset page.}
 \item{download_folder}{Folder where downloaded and extracted files should
 be stored.}
 
-\item{dataset_suffix}{Suffix appended to each publication URL to locate the
-dataset page. Defaults to \code{"/datasets"}.}
+\item{dataset_pattern}{Regular expression used to identify the dataset page
+from links found on each publication page. Defaults to
+\code{"/datasets[^/]*/?$"}.}
 
 \item{period_pattern}{Regular expression used to extract the reporting
 period from publication URLs. Defaults to
@@ -40,7 +41,8 @@ period from publication URLs. Defaults to
 the reporting period extracted from the publication URL.}
 
 \item{file_pattern}{Regular expression used to identify the required file
-type. Defaults to ZIP files using \code{"\\\\.zip($|\\\\?)"}.}
+type. Defaults to ZIP or CSV files using
+\code{"\\\\.(zip|csv)($|\\\\?)"}.}
 
 \item{all_columns_character}{Logical. If \code{TRUE}, all CSV columns are read as
 character values. Defaults to \code{TRUE}.}
@@ -48,19 +50,31 @@ character values. Defaults to \code{TRUE}.}
 \value{
 A list containing:
 \itemize{
-\item \code{data} - combined CSV data from successfully extracted resources.
+\item \code{data} - combined CSV data from successfully processed resources.
 \item \code{catalogue} - publication URLs, resource URLs, downloaded files,
-and extracted folders.
+file types, extracted folders, and processing status.
+\item \code{failed_resources} - publications that could not be successfully
+processed and the reason for failure.
 \item \code{publication_links} - publication links identified from the parent
 page.
 }
 }
 \description{
 Retrieves publication pages from a parent web page, identifies matching
-downloadable resources, downloads and extracts the files, and combines
-CSV data from the extracted folders.
+downloadable resources, downloads the files, and combines CSV data.
 }
 \details{
+Dataset pages are identified from links on each publication page using a
+regular expression. This allows dataset pages such as \verb{/datasets},
+\verb{/datasets2}, and \verb{/datasets---at} to be discovered automatically.
+
+Downloaded ZIP resources are extracted and their CSV files are combined.
+Direct CSV resources are read without extraction.
+
+A progress bar is displayed while resources are downloaded. Publications
+that cannot be successfully processed are reported at the end of the
+process and returned in \code{failed_resources}.
+
 This function acts as an orchestration wrapper around:
 \code{get_child_links()}, \code{get_resource_link()}, \code{download_resource()},
 \code{extract_zip()}, and \code{read_csv_folder()}.
@@ -78,15 +92,16 @@ csds_result <- get_publication_data(
   ),
   resource_text = "CSV Data \\\\(as ZIP\\\\)",
   download_folder = "data/CSDS_downloads",
-  dataset_suffix = "/datasets",
+  dataset_pattern = "/datasets[^/]*/?$",
   period_pattern = "[a-z]+-[0-9]{4}/?$",
   match_period = TRUE,
-  file_pattern = "\\\\.zip($|\\\\?)",
+  file_pattern = "\\\\.(zip|csv)($|\\\\?)",
   all_columns_character = TRUE
 )
 
 csds_result$data
 csds_result$catalogue
+csds_result$failed_resources
 }
 
 }
