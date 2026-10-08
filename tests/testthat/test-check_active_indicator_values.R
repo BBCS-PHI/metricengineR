@@ -16,10 +16,10 @@ create_test_active_indicator_metadata <- function() {
   
   data.frame(
     indicator_id = c(101L, 102L, 103L, 104L),
-    status_code = c(1L, 1L, 1L, 2L)
+    status_code = c(1L, 1L, 1L, 2L),
+    precalculated = c("No", "No", "No", "No")
   )
 }
-
 
 # Test 1: Unexpected missing value is identified 
 
@@ -93,7 +93,8 @@ testthat::test_that(
     
     metadata <- data.frame(
       indicator_id = 101L,
-      status_code = 2L
+      status_code = 2L,
+      precalculated = "No"
     )
     
     suppressMessages(
@@ -127,7 +128,8 @@ testthat::test_that(
     
     metadata <- data.frame(
       indicator_id = 101L,
-      status_code = 1L
+      status_code = 1L,
+      precalculated = "No"
     )
     
     suppressMessages(
@@ -161,7 +163,8 @@ testthat::test_that(
     
     metadata <- data.frame(
       indicator_id = 101L,
-      status_code = 1L
+      status_code = 1L,
+      precalculated = "No"
     )
     
     suppressMessages(
@@ -195,7 +198,8 @@ testthat::test_that(
     
     metadata <- data.frame(
       indicator_id = 101L,
-      status_code = 1L
+      status_code = 1L,
+      precalculated = "No"
     )
     
     suppressMessages(
@@ -229,7 +233,8 @@ testthat::test_that(
     
     metadata <- data.frame(
       indicator_id = 101L,
-      status_code = 1L
+      status_code = 1L,
+      precalculated = "No"
     )
     
     suppressMessages(
@@ -267,7 +272,8 @@ testthat::test_that(
     
     metadata <- data.frame(
       indicator_id = c(101L, 102L, 103L),
-      status_code = c(1L, 1L, 1L)
+      status_code = c(1L, 1L, 1L),
+      precalculated = "No"
     )
     
     suppressMessages(
@@ -306,7 +312,8 @@ testthat::test_that(
     
     metadata <- data.frame(
       indicator_id = 101L,
-      status_code = 1L
+      status_code = 1L,
+      precalculated = "No"
     )
     
     suppressMessages(
@@ -340,7 +347,8 @@ testthat::test_that(
     
     metadata <- data.frame(
       indicator_id = 101L,
-      status_code = 1L
+      status_code = 1L,
+      precalculated = "No"
     )
     
     suppressMessages(
@@ -383,7 +391,8 @@ testthat::test_that(
     
     metadata <- data.frame(
       indicator_id = c(101L, 102L, 103L),
-      status_code = c(1L, 1L, 1L)
+      status_code = c(1L, 1L, 1L),
+      precalculated = "No"
     )
     
     testthat::expect_message(
@@ -423,7 +432,8 @@ testthat::test_that(
     
     metadata <- data.frame(
       indicator_id = 101L,
-      status_code = 1L
+      status_code = 1L,
+      precalculated = "No"
     )
     
     testthat::expect_message(
@@ -488,7 +498,8 @@ testthat::test_that(
     
     metadata <- data.frame(
       indicator_id = 101L,
-      status_code = 1L
+      status_code = 1L,
+      precalculated = "No"
     )
     
     testthat::expect_error(
@@ -548,7 +559,8 @@ testthat::test_that(
     
     metadata <- data.frame(
       indicator_id = c(101L, 102L, 103L),
-      status_code = c(1L, 1L, 1L)
+      status_code = c(1L, 1L, 1L),
+      precalculated = c("No", "No", "No")
     )
     
     suppressMessages(
@@ -585,7 +597,8 @@ testthat::test_that(
     
     metadata <- data.frame(
       indicator_id = c(101L, 102L, 103L),
-      status_code = c(1L, 1L, 1L)
+      status_code = c(1L, 1L, 1L),
+      precalculated = c("No", "No", "No")
     )
     
     suppressMessages(
@@ -635,7 +648,8 @@ testthat::test_that(
     
     metadata <- data.frame(
       indicator_id = c(101L, 102L, 103L),
-      status_code = c(1L, 1L, 1L)
+      status_code = c(1L, 1L, 1L), 
+      precalculated = c("No", "No", "No")
     )
     
     suppressMessages(
@@ -643,6 +657,41 @@ testthat::test_that(
         df,
         metadata
       )
+    )
+    
+    testthat::expect_equal(
+      nrow(result),
+      0L
+    )
+  }
+)
+
+# Test 20: Precalculated indicators with missing values are allowed
+
+testthat::test_that(
+  "check_active_indicator_values allows missing values for precalculated indicators",
+  {
+    
+    df <- data.frame(
+      indicator_id = 101L,
+      indicator_value = NA_real_,
+      value_type_code = 1L,
+      numerator = 10,
+      denominator = 100
+    )
+    
+    metadata <- data.frame(
+      indicator_id = 101L,
+      status_code = 1L,
+      precalculated = "Yes"
+    )
+    
+    testthat::expect_message(
+      result <- check_active_indicator_values(
+        df,
+        metadata
+      ),
+      "All active indicators have a populated indicator_value"
     )
     
     testthat::expect_equal(

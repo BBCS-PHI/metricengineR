@@ -70,8 +70,9 @@ testthat::test_that(
   "get_fingertips_indicators retrieves data from the Fingertips API",
   {
     
-    testthat::skip_if_offline(
-      "fingertips.phe.org.uk"
+    testthat::skip_if(
+      Sys.getenv("RUN_LIVE_FINGERTIPS_TESTS") != "true",
+      "Live Fingertips tests are not enabled"
     )
     
     suppressMessages(
@@ -97,8 +98,9 @@ testthat::test_that(
   "get_fingertips_indicators can retrieve multiple indicators",
   {
     
-    testthat::skip_if_offline(
-      "fingertips.phe.org.uk"
+    testthat::skip_if(
+      Sys.getenv("RUN_LIVE_FINGERTIPS_TESTS") != "true",
+      "Live Fingertips tests are not enabled"
     )
     
     suppressMessages(

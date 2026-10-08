@@ -8,9 +8,11 @@ check_active_indicator_values(df, metadata)
 }
 \arguments{
 \item{df}{A data frame containing indicator results, including
-\code{indicator_id}, \code{indicator_value}, \code{value_type_code}, \code{numerator} and \code{denominator}.}
+\code{indicator_id}, \code{indicator_value}, \code{value_type_code}, \code{numerator},
+and \code{denominator}.}
 
-\item{metadata}{A data frame containing \code{indicator_id} and \code{status_code}.}
+\item{metadata}{A data frame containing \code{indicator_id}, \code{status_code},
+and \code{precalculated}.}
 }
 \value{
 A data frame containing active indicator rows with unexpected
@@ -25,4 +27,7 @@ Indicators with \code{status_code == 1} are treated as active.
 Missing \code{indicator_value} is allowed for value types \code{2}, \code{9}, and \code{10}
 when the numerator or denominator is missing, or when the denominator
 is equal to zero.
+
+Missing \code{indicator_value} is also allowed for precalculated indicators,
+as published values may be unavailable or suppressed at source.
 }
