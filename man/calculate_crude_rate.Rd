@@ -6,6 +6,7 @@
 \usage{
 calculate_crude_rate(
   df,
+  indicator_id_col = "indicator_id",
   value_type_code_col = "value_type_code",
   numerator_col = "numerator",
   denominator_col = "denominator",
@@ -15,6 +16,9 @@ calculate_crude_rate(
 }
 \arguments{
 \item{df}{A data frame containing the values to calculate.}
+
+\item{indicator_id_col}{Name of the column containing indicator IDs.
+Defaults to \code{"indicator_id"}.}
 
 \item{value_type_code_col}{Name of the column containing value type codes.
 Defaults to \code{"value_type_code"}.}
@@ -44,12 +48,15 @@ Confidence intervals can optionally be calculated using
 Rows are eligible for calculation when the numerator, denominator, and value
 multiplier are present and the denominator is greater than zero.
 
+Each indicator must have a single value multiplier. Different indicators
+may use different value multipliers.
+
 Crude rates are calculated as numerator divided by denominator multiplied
 by the value multiplier. Numerators cannot be negative.
 
 When confidence intervals are required, \code{PHEindicatormethods::phe_rate()}
-is used to calculate the crude rate and 95 percent confidence intervals.
-Eligible rows must use the same value multiplier.
+is applied separately to each indicator using that indicator's value
+multiplier.
 
 Ineligible rows are retained with calculated values set to \code{NA}.
 }
