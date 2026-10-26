@@ -5,6 +5,8 @@
 #' `PHEindicatormethods::phe_rate()`.
 #'
 #' @param df A data frame containing the values to calculate.
+#' @param indicator_id_col Name of the column containing indicator IDs.
+#'   Defaults to `"indicator_id"`.
 #' @param value_type_code_col Name of the column containing value type codes.
 #'   Defaults to `"value_type_code"`.
 #' @param numerator_col Name of the numerator column.
@@ -23,24 +25,31 @@
 #' Rows are eligible for calculation when the numerator, denominator, and value
 #' multiplier are present and the denominator is greater than zero.
 #'
+#' Each indicator must have a single value multiplier. Different indicators
+#' may use different value multipliers.
+#'
 #' Crude rates are calculated as numerator divided by denominator multiplied
 #' by the value multiplier. Numerators cannot be negative.
 #'
 #' When confidence intervals are required, `PHEindicatormethods::phe_rate()`
-#' is used to calculate the crude rate and 95 percent confidence intervals.
-#' Eligible rows must use the same value multiplier.
+#' is applied separately to each indicator using that indicator's value
+#' multiplier.
 #'
 #' Ineligible rows are retained with calculated values set to `NA`.
 #'
 #' @export
-calculate_crude_rate <- function(df,
-                            value_type_code_col = "value_type_code",
-                            numerator_col = "numerator",
-                            denominator_col = "denominator",
-                            value_multiplier_col = "value_multiplier",
-                            confidence_intervals_required = FALSE){
+calculate_crude_rate <- function(
+    df,
+    indicator_id_col = "indicator_id",
+    value_type_code_col = "value_type_code",
+    numerator_col = "numerator",
+    denominator_col = "denominator",
+    value_multiplier_col = "value_multiplier",
+    confidence_intervals_required = FALSE
+){
   
   # Validate input
+  
   if(!is.data.frame(df)){
     stop(
       "`df` must be a data frame.",
@@ -49,60 +58,142 @@ calculate_crude_rate <- function(df,
   }
   
   required_cols <- c(
+    indicator_id_col,
     value_type_code_col,
     numerator_col,
     denominator_col,
     value_multiplier_col
   )
   
-  missing_cols <- setdiff(required_cols, names(df))
+  missing_cols <- setdiff(
+    required_cols,
+    names(df)
+  )
   
-  if(length(missing_cols) > 0){
+  if(length(missing_cols) > 0L){
     stop(
       "Missing required columns: ",
-      paste(missing_cols, collapse = ", "),
+      paste(
+        missing_cols,
+        collapse = ", "
+      ),
       call. = FALSE
     )
   }
   
-  if(!is.logical(confidence_intervals_required) ||
-     length(confidence_intervals_required) != 1 ||
-     is.na(confidence_intervals_required)){
-    
+  if(
+    !is.logical(confidence_intervals_required) ||
+    length(confidence_intervals_required) != 1L ||
+    is.na(confidence_intervals_required)
+  ){
     stop(
       "`confidence_intervals_required` must be TRUE or FALSE.",
       call. = FALSE
     )
   }
   
+  
   # Filter crude rate rows
+  
   result <- df |>
     dplyr::filter(
       .data[[value_type_code_col]] == 3L
     )
   
+  
+  # Check each indicator has only one value multiplier
+  
+  multiplier_check <- result |>
+    dplyr::filter(
+      !is.na(.data[[value_multiplier_col]])
+    ) |>
+    dplyr::group_by(
+      .data[[indicator_id_col]]
+    ) |>
+    dplyr::summarise(
+      multiplier_count = dplyr::n_distinct(
+        .data[[value_multiplier_col]]
+      ),
+      .groups = "drop"
+    ) |>
+    dplyr::filter(
+      .data$multiplier_count > 1L
+    )
+  
+  if(nrow(multiplier_check) > 0L){
+    
+    problem_indicators <- paste(
+      multiplier_check[[indicator_id_col]],
+      collapse = ", "
+    )
+    
+    stop(
+      paste0(
+        "More than one value multiplier found for indicator_id(s): ",
+        problem_indicators,
+        "."
+      ),
+      call. = FALSE
+    )
+  }
+  
+  
   # Define rows eligible for calculation
+  
   eligible <- !is.na(result[[numerator_col]]) &
     !is.na(result[[denominator_col]]) &
     result[[denominator_col]] > 0 &
     !is.na(result[[value_multiplier_col]])
   
+  
+  # Eligible rows must have an indicator ID
+  
+  if(
+    any(
+      is.na(result[[indicator_id_col]][eligible])
+    )
+  ){
+    stop(
+      "`indicator_id` cannot be missing for eligible crude rate calculations.",
+      call. = FALSE
+    )
+  }
+  
+  
   # Crude rate numerators cannot be negative
-  if(any(
-    result[[numerator_col]][eligible] < 0
-  )){
+  
+  if(
+    any(
+      result[[numerator_col]][eligible] < 0
+    )
+  ){
     stop(
       "Numerator cannot be negative for crude rate calculations.",
       call. = FALSE
     )
   }
   
+  
   # Initialise calculated columns
-  result$value <- rep(NA_real_, nrow(result))
-  result$lowercl <- rep(NA_real_, nrow(result))
-  result$uppercl <- rep(NA_real_, nrow(result))
+  
+  result$value <- rep(
+    NA_real_,
+    nrow(result)
+  )
+  
+  result$lowercl <- rep(
+    NA_real_,
+    nrow(result)
+  )
+  
+  result$uppercl <- rep(
+    NA_real_,
+    nrow(result)
+  )
+  
   
   # Calculate crude rates without confidence intervals
+  
   if(!confidence_intervals_required){
     
     result$value[eligible] <-
@@ -113,41 +204,50 @@ calculate_crude_rate <- function(df,
     return(result)
   }
   
+  
   # Calculate crude rates with confidence intervals
+  
   if(any(eligible)){
     
-    df_rate <- result[eligible, ] |>
-      dplyr::mutate(
-        numerator_rate = .data[[numerator_col]],
-        denominator_rate = .data[[denominator_col]]
-      )
-    
-    multiplier_values <- unique(
-      df_rate[[value_multiplier_col]]
+    eligible_rows <- which(
+      eligible
     )
     
-    if(length(multiplier_values) > 1){
-      stop(
-        "More than one value multiplier found for crude rate calculations.",
-        call. = FALSE
+    indicator_groups <- split(
+      eligible_rows,
+      result[[indicator_id_col]][eligible_rows]
+    )
+    
+    
+    for(rows in indicator_groups){
+      
+      df_rate <- result[rows, ] |>
+        dplyr::mutate(
+          numerator_rate = .data[[numerator_col]],
+          denominator_rate = .data[[denominator_col]]
+        )
+      
+      multiplier_value <- unique(
+        df_rate[[value_multiplier_col]]
+      )[1]
+      
+      
+      rate_result <- PHEindicatormethods::phe_rate(
+        df_rate,
+        x = numerator_rate,
+        n = denominator_rate,
+        confidence = 0.95,
+        type = "standard",
+        multiplier = multiplier_value
       )
+      
+      
+      result$value[rows] <- rate_result$value
+      result$lowercl[rows] <- rate_result$lowercl
+      result$uppercl[rows] <- rate_result$uppercl
     }
-    
-    multiplier_value <- multiplier_values[1]
-    
-    rate_result <- PHEindicatormethods::phe_rate(
-      df_rate,
-      x = numerator_rate,
-      n = denominator_rate,
-      confidence = 0.95,
-      type = "standard",
-      multiplier = multiplier_value
-    )
-    
-    result$value[eligible] <- rate_result$value
-    result$lowercl[eligible] <- rate_result$lowercl
-    result$uppercl[eligible] <- rate_result$uppercl
   }
+  
   
   result
 }
