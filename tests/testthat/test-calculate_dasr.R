@@ -438,3 +438,71 @@ testthat::test_that("calculate_dasr handles data with no DASR rows", {
     0
   )
 })
+
+# Test 14: calculate_dasr renames total_count and total_pop
+test_that("calculate_dasr renames total_count and total_pop", {
+  
+  df <- data.frame(
+    indicator_id = rep(101L, 18),
+    start_date = rep(as.Date("2025-01-01"), 18),
+    end_date = rep(as.Date("2025-12-31"), 18),
+    numerator = rep(1, 18),
+    denominator = rep(1000, 18),
+    value_multiplier = rep(100000, 18),
+    age_group_code = 1:18,
+    imd_code = rep(999L, 18),
+    aggregation_id = rep(1L, 18),
+    sex_code = rep(999L, 18),
+    ethnicity_code = rep(999L, 18),
+    creation_date = rep(as.Date("2026-01-01"), 18),
+    value_type_code = rep(4L, 18),
+    source_code = rep(1L, 18),
+    time_period_type = rep("1 year", 18),
+    combination_id = rep(4L, 18)
+  )
+  
+  age_metadata <- data.frame(
+    indicator_id = 101L,
+    single_age_code = 999L
+  )
+  
+  result <- calculate_dasr(
+    df = df,
+    age_metadata = age_metadata
+  )
+  
+  
+  # Check renamed columns exist
+  
+  expect_true(
+    "numerator" %in% names(result)
+  )
+  
+  expect_true(
+    "denominator" %in% names(result)
+  )
+  
+  
+  # Check original PHE output column names have been removed
+  
+  expect_false(
+    "total_count" %in% names(result)
+  )
+  
+  expect_false(
+    "total_pop" %in% names(result)
+  )
+  
+  
+  # Check values were retained during renaming
+  
+  expect_equal(
+    result$numerator,
+    18
+  )
+  
+  expect_equal(
+    result$denominator,
+    18000
+  )
+})
