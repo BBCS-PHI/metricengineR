@@ -1,4 +1,4 @@
-# Helper data 
+# Helper data
 
 create_test_active_indicator_data <- function() {
   
@@ -21,7 +21,8 @@ create_test_active_indicator_metadata <- function() {
   )
 }
 
-# Test 1: Unexpected missing value is identified 
+
+# Test 1: Unexpected missing indicator value is identified
 
 testthat::test_that(
   "check_active_indicator_values identifies unexpected missing values",
@@ -77,7 +78,7 @@ testthat::test_that(
 )
 
 
-# Test 3: Inactive indicators are ignored 
+# Test 3: Inactive indicators are ignored
 
 testthat::test_that(
   "check_active_indicator_values ignores inactive indicators",
@@ -112,24 +113,32 @@ testthat::test_that(
 )
 
 
-# Test 4: Percentage with zero denominator is allowed 
+# Test 4: Missing numerator is allowed
 
 testthat::test_that(
-  "check_active_indicator_values allows missing percentage value when denominator is zero",
+  "check_active_indicator_values allows missing value when numerator is missing",
   {
     
     df <- data.frame(
-      indicator_id = 101L,
-      indicator_value = NA_real_,
-      value_type_code = 2L,
-      numerator = 10,
-      denominator = 0
+      indicator_id = c(101L, 102L, 103L),
+      indicator_value = c(
+        NA_real_,
+        NA_real_,
+        NA_real_
+      ),
+      value_type_code = c(1L, 3L, 4L),
+      numerator = c(
+        NA_real_,
+        NA_real_,
+        NA_real_
+      ),
+      denominator = c(100, 100, 100)
     )
     
     metadata <- data.frame(
-      indicator_id = 101L,
-      status_code = 1L,
-      precalculated = "No"
+      indicator_id = c(101L, 102L, 103L),
+      status_code = c(1L, 1L, 1L),
+      precalculated = c("No", "No", "No")
     )
     
     suppressMessages(
@@ -147,17 +156,148 @@ testthat::test_that(
 )
 
 
-# Test 5: Percentage with missing denominator is allowed 
+# Test 5: Missing denominator is allowed
 
 testthat::test_that(
-  "check_active_indicator_values allows missing percentage value when denominator is missing",
+  "check_active_indicator_values allows missing value when denominator is missing",
+  {
+    
+    df <- data.frame(
+      indicator_id = c(101L, 102L, 103L),
+      indicator_value = c(
+        NA_real_,
+        NA_real_,
+        NA_real_
+      ),
+      value_type_code = c(1L, 3L, 4L),
+      numerator = c(10, 20, 30),
+      denominator = c(
+        NA_real_,
+        NA_real_,
+        NA_real_
+      )
+    )
+    
+    metadata <- data.frame(
+      indicator_id = c(101L, 102L, 103L),
+      status_code = c(1L, 1L, 1L),
+      precalculated = c("No", "No", "No")
+    )
+    
+    suppressMessages(
+      result <- check_active_indicator_values(
+        df,
+        metadata
+      )
+    )
+    
+    testthat::expect_equal(
+      nrow(result),
+      0L
+    )
+  }
+)
+
+
+# Test 6: Zero denominator is allowed
+
+testthat::test_that(
+  "check_active_indicator_values allows missing value when denominator is zero",
+  {
+    
+    df <- data.frame(
+      indicator_id = c(101L, 102L, 103L),
+      indicator_value = c(
+        NA_real_,
+        NA_real_,
+        NA_real_
+      ),
+      value_type_code = c(1L, 3L, 4L),
+      numerator = c(10, 20, 30),
+      denominator = c(0, 0, 0)
+    )
+    
+    metadata <- data.frame(
+      indicator_id = c(101L, 102L, 103L),
+      status_code = c(1L, 1L, 1L),
+      precalculated = c("No", "No", "No")
+    )
+    
+    suppressMessages(
+      result <- check_active_indicator_values(
+        df,
+        metadata
+      )
+    )
+    
+    testthat::expect_equal(
+      nrow(result),
+      0L
+    )
+  }
+)
+
+
+# Test 7: Missing numerator and denominator are allowed
+
+testthat::test_that(
+  "check_active_indicator_values allows missing value when numerator and denominator are missing",
+  {
+    
+    df <- data.frame(
+      indicator_id = c(101L, 102L, 103L),
+      indicator_value = c(
+        NA_real_,
+        NA_real_,
+        NA_real_
+      ),
+      value_type_code = c(1L, 3L, 4L),
+      numerator = c(
+        NA_real_,
+        NA_real_,
+        NA_real_
+      ),
+      denominator = c(
+        NA_real_,
+        NA_real_,
+        NA_real_
+      )
+    )
+    
+    metadata <- data.frame(
+      indicator_id = c(101L, 102L, 103L),
+      status_code = c(1L, 1L, 1L),
+      precalculated = c("No", "No", "No")
+    )
+    
+    suppressMessages(
+      result <- check_active_indicator_values(
+        df,
+        metadata
+      )
+    )
+    
+    testthat::expect_equal(
+      nrow(result),
+      0L
+    )
+  }
+)
+
+
+# Test 8: Incalculable DASR is allowed
+# Checks the case where the DASR calculation returns missing numerator,
+# denominator, and indicator value.
+
+testthat::test_that(
+  "check_active_indicator_values allows incalculable DASR values",
   {
     
     df <- data.frame(
       indicator_id = 101L,
       indicator_value = NA_real_,
-      value_type_code = 2L,
-      numerator = 10,
+      value_type_code = 4L,
+      numerator = NA_real_,
       denominator = NA_real_
     )
     
@@ -182,24 +322,63 @@ testthat::test_that(
 )
 
 
-# Test 6: Percentage change with zero denominator is allowed 
+# Test 9: Missing indicator value is flagged when calculation inputs are valid
 
 testthat::test_that(
-  "check_active_indicator_values allows missing percentage change value when denominator is zero",
+  "check_active_indicator_values flags missing values when calculation inputs are valid",
   {
     
     df <- data.frame(
-      indicator_id = 101L,
-      indicator_value = NA_real_,
-      value_type_code = 9L,
-      numerator = 10,
-      denominator = 0
+      indicator_id = c(
+        101L,
+        102L,
+        103L,
+        104L,
+        105L
+      ),
+      indicator_value = rep(
+        NA_real_,
+        5
+      ),
+      value_type_code = c(
+        1L,
+        2L,
+        3L,
+        4L,
+        9L
+      ),
+      numerator = c(
+        10,
+        20,
+        30,
+        40,
+        50
+      ),
+      denominator = c(
+        100,
+        200,
+        300,
+        400,
+        500
+      )
     )
     
     metadata <- data.frame(
-      indicator_id = 101L,
-      status_code = 1L,
-      precalculated = "No"
+      indicator_id = c(
+        101L,
+        102L,
+        103L,
+        104L,
+        105L
+      ),
+      status_code = rep(
+        1L,
+        5
+      ),
+      precalculated = rep(
+        "No",
+        5
+      )
     )
     
     suppressMessages(
@@ -211,51 +390,27 @@ testthat::test_that(
     
     testthat::expect_equal(
       nrow(result),
-      0L
-    )
-  }
-)
-
-
-# Test 7: Percentage point difference with zero denominator is allowed 
-
-testthat::test_that(
-  "check_active_indicator_values allows missing percentage point difference when denominator is zero",
-  {
-    
-    df <- data.frame(
-      indicator_id = 101L,
-      indicator_value = NA_real_,
-      value_type_code = 10L,
-      numerator = 10,
-      denominator = 0
-    )
-    
-    metadata <- data.frame(
-      indicator_id = 101L,
-      status_code = 1L,
-      precalculated = "No"
-    )
-    
-    suppressMessages(
-      result <- check_active_indicator_values(
-        df,
-        metadata
-      )
+      5L
     )
     
     testthat::expect_equal(
-      nrow(result),
-      0L
+      result$indicator_id,
+      c(
+        101L,
+        102L,
+        103L,
+        104L,
+        105L
+      )
     )
   }
 )
 
 
-# Test 8: Expected value types still fail when denominator is valid 
+# Test 10: Zero numerator is not treated as missing
 
 testthat::test_that(
-  "check_active_indicator_values flags missing values when denominator is populated",
+  "check_active_indicator_values does not treat zero numerator as missing",
   {
     
     df <- data.frame(
@@ -265,15 +420,15 @@ testthat::test_that(
         NA_real_,
         NA_real_
       ),
-      value_type_code = c(2L, 9L, 10L),
-      numerator = c(10, 20, 30),
+      value_type_code = c(2L, 3L, 4L),
+      numerator = c(0, 0, 0),
       denominator = c(100, 100, 100)
     )
     
     metadata <- data.frame(
       indicator_id = c(101L, 102L, 103L),
       status_code = c(1L, 1L, 1L),
-      precalculated = "No"
+      precalculated = c("No", "No", "No")
     )
     
     suppressMessages(
@@ -296,10 +451,10 @@ testthat::test_that(
 )
 
 
-# Test 9: Other value types are not exempt 
+# Test 11: Precalculated indicators with missing values are allowed
 
 testthat::test_that(
-  "check_active_indicator_values does not exempt other value types with zero denominator",
+  "check_active_indicator_values allows missing values for precalculated indicators",
   {
     
     df <- data.frame(
@@ -307,7 +462,88 @@ testthat::test_that(
       indicator_value = NA_real_,
       value_type_code = 1L,
       numerator = 10,
-      denominator = 0
+      denominator = 100
+    )
+    
+    metadata <- data.frame(
+      indicator_id = 101L,
+      status_code = 1L,
+      precalculated = "Yes"
+    )
+    
+    testthat::expect_message(
+      result <- check_active_indicator_values(
+        df,
+        metadata
+      ),
+      "All active indicators have a populated indicator_value"
+    )
+    
+    testthat::expect_equal(
+      nrow(result),
+      0L
+    )
+  }
+)
+
+
+# Test 12: Multiple failing indicators are returned
+
+testthat::test_that(
+  "check_active_indicator_values returns all failing active indicators",
+  {
+    
+    df <- data.frame(
+      indicator_id = c(101L, 102L, 103L),
+      indicator_value = c(
+        NA_real_,
+        NA_real_,
+        30
+      ),
+      value_type_code = c(1L, 3L, 4L),
+      numerator = c(10, 20, 30),
+      denominator = c(100, 200, 300)
+    )
+    
+    metadata <- data.frame(
+      indicator_id = c(101L, 102L, 103L),
+      status_code = c(1L, 1L, 1L),
+      precalculated = c("No", "No", "No")
+    )
+    
+    testthat::expect_message(
+      result <- check_active_indicator_values(
+        df,
+        metadata
+      ),
+      "101, 102"
+    )
+    
+    testthat::expect_equal(
+      nrow(result),
+      2L
+    )
+    
+    testthat::expect_equal(
+      result$indicator_id,
+      c(101L, 102L)
+    )
+  }
+)
+
+
+# Test 13: Failure message is produced
+
+testthat::test_that(
+  "check_active_indicator_values reports unexpected missing values",
+  {
+    
+    df <- data.frame(
+      indicator_id = 101L,
+      indicator_value = NA_real_,
+      value_type_code = 1L,
+      numerator = 10,
+      denominator = 100
     )
     
     metadata <- data.frame(
@@ -316,25 +552,21 @@ testthat::test_that(
       precalculated = "No"
     )
     
-    suppressMessages(
-      result <- check_active_indicator_values(
+    testthat::expect_message(
+      check_active_indicator_values(
         df,
         metadata
-      )
-    )
-    
-    testthat::expect_equal(
-      nrow(result),
-      1L
+      ),
+      "Found active indicators with unexpected missing indicator_value"
     )
   }
 )
 
 
-# Test 10: Missing value_type_code is still flagged 
+# Test 14: Missing value type still fails when calculation inputs are valid
 
 testthat::test_that(
-  "check_active_indicator_values flags missing indicator value when value type is missing",
+  "check_active_indicator_values flags missing value when value type is missing",
   {
     
     df <- data.frame(
@@ -371,83 +603,7 @@ testthat::test_that(
 )
 
 
-# Test 11: Multiple failing indicators are returned 
-
-testthat::test_that(
-  "check_active_indicator_values returns all failing active indicators",
-  {
-    
-    df <- data.frame(
-      indicator_id = c(101L, 102L, 103L),
-      indicator_value = c(
-        NA_real_,
-        NA_real_,
-        30
-      ),
-      value_type_code = c(1L, 1L, 1L),
-      numerator = c(10, 20, 30),
-      denominator = c(100, 200, 300)
-    )
-    
-    metadata <- data.frame(
-      indicator_id = c(101L, 102L, 103L),
-      status_code = c(1L, 1L, 1L),
-      precalculated = "No"
-    )
-    
-    testthat::expect_message(
-      result <- check_active_indicator_values(
-        df,
-        metadata
-      ),
-      "101, 102"
-    )
-    
-    testthat::expect_equal(
-      nrow(result),
-      2L
-    )
-    
-    testthat::expect_equal(
-      result$indicator_id,
-      c(101L, 102L)
-    )
-  }
-)
-
-
-# Test 12: Error message is produced 
-
-testthat::test_that(
-  "check_active_indicator_values gives error message for failures",
-  {
-    
-    df <- data.frame(
-      indicator_id = 101L,
-      indicator_value = NA_real_,
-      value_type_code = 1L,
-      numerator = 10,
-      denominator = 100
-    )
-    
-    metadata <- data.frame(
-      indicator_id = 101L,
-      status_code = 1L,
-      precalculated = "No"
-    )
-    
-    testthat::expect_message(
-      check_active_indicator_values(
-        df,
-        metadata
-      ),
-      "Found active indicators with unexpected missing indicator_value"
-    )
-  }
-)
-
-
-# Test 13: Non-data-frame df is rejected 
+# Test 15: Non-data-frame df is rejected
 
 testthat::test_that(
   "check_active_indicator_values rejects non-data-frame df",
@@ -466,7 +622,7 @@ testthat::test_that(
 )
 
 
-# Test 14: Non-data-frame metadata is rejected
+# Test 16: Non-data-frame metadata is rejected
 
 testthat::test_that(
   "check_active_indicator_values rejects non-data-frame metadata",
@@ -485,7 +641,7 @@ testthat::test_that(
 )
 
 
-# Test 15: Missing df columns are reported 
+# Test 17: Missing df columns are reported
 
 testthat::test_that(
   "check_active_indicator_values reports missing df columns",
@@ -513,7 +669,7 @@ testthat::test_that(
 )
 
 
-# Test 16: Missing metadata columns are reported 
+# Test 18: Missing metadata columns are reported
 
 testthat::test_that(
   "check_active_indicator_values reports missing metadata columns",
@@ -530,173 +686,7 @@ testthat::test_that(
         df,
         metadata
       ),
-      "Missing required columns in `metadata`: status_code"
-    )
-  }
-)
-
-# Test 17: Missing numerator is allowed for calculation value types
-
-testthat::test_that(
-  "check_active_indicator_values allows missing value when numerator is missing",
-  {
-    
-    df <- data.frame(
-      indicator_id = c(101L, 102L, 103L),
-      indicator_value = c(
-        NA_real_,
-        NA_real_,
-        NA_real_
-      ),
-      value_type_code = c(2L, 9L, 10L),
-      numerator = c(
-        NA_real_,
-        NA_real_,
-        NA_real_
-      ),
-      denominator = c(100, 100, 100)
-    )
-    
-    metadata <- data.frame(
-      indicator_id = c(101L, 102L, 103L),
-      status_code = c(1L, 1L, 1L),
-      precalculated = c("No", "No", "No")
-    )
-    
-    suppressMessages(
-      result <- check_active_indicator_values(
-        df,
-        metadata
-      )
-    )
-    
-    testthat::expect_equal(
-      nrow(result),
-      0L
-    )
-  }
-)
-
-# Test 18: Zero numerator is a valid calculation input
-
-testthat::test_that(
-  "check_active_indicator_values does not treat zero numerator as missing",
-  {
-    
-    df <- data.frame(
-      indicator_id = c(101L, 102L, 103L),
-      indicator_value = c(
-        NA_real_,
-        NA_real_,
-        NA_real_
-      ),
-      value_type_code = c(2L, 9L, 10L),
-      numerator = c(0, 0, 0),
-      denominator = c(100, 100, 100)
-    )
-    
-    metadata <- data.frame(
-      indicator_id = c(101L, 102L, 103L),
-      status_code = c(1L, 1L, 1L),
-      precalculated = c("No", "No", "No")
-    )
-    
-    suppressMessages(
-      result <- check_active_indicator_values(
-        df,
-        metadata
-      )
-    )
-    
-    testthat::expect_equal(
-      nrow(result),
-      3L
-    )
-    
-    testthat::expect_equal(
-      result$indicator_id,
-      c(101L, 102L, 103L)
-    )
-  }
-)
-
-# Test 19: Missing numerator and denominator are allowed
-
-testthat::test_that(
-  "check_active_indicator_values allows missing value when numerator and denominator are missing",
-  {
-    
-    df <- data.frame(
-      indicator_id = c(101L, 102L, 103L),
-      indicator_value = c(
-        NA_real_,
-        NA_real_,
-        NA_real_
-      ),
-      value_type_code = c(2L, 9L, 10L),
-      numerator = c(
-        NA_real_,
-        NA_real_,
-        NA_real_
-      ),
-      denominator = c(
-        NA_real_,
-        NA_real_,
-        NA_real_
-      )
-    )
-    
-    metadata <- data.frame(
-      indicator_id = c(101L, 102L, 103L),
-      status_code = c(1L, 1L, 1L), 
-      precalculated = c("No", "No", "No")
-    )
-    
-    suppressMessages(
-      result <- check_active_indicator_values(
-        df,
-        metadata
-      )
-    )
-    
-    testthat::expect_equal(
-      nrow(result),
-      0L
-    )
-  }
-)
-
-# Test 20: Precalculated indicators with missing values are allowed
-
-testthat::test_that(
-  "check_active_indicator_values allows missing values for precalculated indicators",
-  {
-    
-    df <- data.frame(
-      indicator_id = 101L,
-      indicator_value = NA_real_,
-      value_type_code = 1L,
-      numerator = 10,
-      denominator = 100
-    )
-    
-    metadata <- data.frame(
-      indicator_id = 101L,
-      status_code = 1L,
-      precalculated = "Yes"
-    )
-    
-    testthat::expect_message(
-      result <- check_active_indicator_values(
-        df,
-        metadata
-      ),
-      "All active indicators have a populated indicator_value"
-    )
-    
-    testthat::expect_equal(
-      nrow(result),
-      0L
+      "Missing required columns in `metadata`"
     )
   }
 )
