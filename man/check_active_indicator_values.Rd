@@ -16,17 +16,26 @@ and \code{precalculated}.}
 }
 \value{
 A data frame containing active indicator rows with unexpected
-missing \code{indicator_value}. Returns an empty data frame if no issues are found.
+missing \code{indicator_value}. Returns an empty data frame if no issues are
+found.
 }
 \description{
-Checks that active indicators have a populated \code{indicator_value}.
+Checks that active indicators have a populated \code{indicator_value}, excluding
+cases where a value cannot be calculated because the numerator or denominator
+is unavailable.
 }
 \details{
 Indicators with \code{status_code == 1} are treated as active.
 
-Missing \code{indicator_value} is allowed for value types \code{2}, \code{9}, and \code{10}
-when the numerator or denominator is missing, or when the denominator
-is equal to zero.
+For calculated indicators, a missing \code{indicator_value} is treated as
+expected when either the numerator or denominator is missing, or when the
+denominator is equal to zero. These rows are considered incalculable rather
+than data quality failures.
+
+This includes calculation methods that intentionally return missing values
+when calculation requirements are not met. For example, a directly
+age-standardised rate may return a missing result when the underlying event
+count is insufficient for calculation.
 
 Missing \code{indicator_value} is also allowed for precalculated indicators,
 as published values may be unavailable or suppressed at source.

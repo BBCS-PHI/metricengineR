@@ -2,7 +2,8 @@
 #'
 #' Extracts indicator data from a SQL database table using an existing
 #' database connection. The function can return all indicators or filter
-#' the data to a specified set of indicator IDs.
+#' the data to a specified set of indicator IDs. All columns can be returned,
+#' or extraction can be restricted to a specified set of columns.
 #'
 #' @param conn An active database connection, typically created using
 #'   `DBI::dbConnect()`.
@@ -31,22 +32,35 @@
 #'
 #'   `"All"` must be supplied on its own. Defaults to `NULL`.
 #'
-#' @return A data frame containing the records returned by the SQL query.
-#'   On successful execution, messages are printed confirming that the
+#' @param columns An optional character vector containing the names of columns
+#'   to extract from the SQL table. If `NULL`, all columns are extracted.
+#'   For example, `c("indicator_id", "start_date", "numerator")`.
+#'   Defaults to `NULL`.
+#'
+#' @return A data frame containing the records and columns returned by the SQL
+#'   query. On successful execution, messages are printed confirming that the
 #'   extraction completed and reporting the total number of rows extracted.
 #'
 #' @details
-#' The function first validates `indicator_ids` to ensure that the supplied
-#' values are either numeric or character.
+#' The function first normalises `indicator_ids` using
+#' `normalise_indicator_ids()`.
 #'
-#' A SQL table identifier is then created using `DBI::Id()`. When
-#' `database_name` is supplied, the identifier contains the database, schema,
-#' and table. When `database_name` is `NULL`, only the schema and table are
-#' used.
+#' If `columns` is supplied, it must be a non-empty character vector without
+#' missing values. Duplicate column names are removed before the SQL query is
+#' constructed.
+#'
+#' A SQL table identifier is created using `DBI::Id()`. When `database_name`
+#' is supplied, the identifier contains the database, schema, and table. When
+#' `database_name` is `NULL`, only the schema and table are used.
 #'
 #' The table identifier is safely quoted using `DBI::dbQuoteIdentifier()`.
 #'
-#' If `indicator_ids` is `NULL` or equal to `"All"`, all rows from the
+#' If `columns` is `NULL`, the SQL query uses `SELECT *` and all columns are
+#' returned. Otherwise, the supplied column names are safely quoted using
+#' `DBI::dbQuoteIdentifier()` and only those columns are included in the
+#' `SELECT` clause.
+#'
+#' If `indicator_ids` is `NULL` or equal to `"All"`, all indicators from the
 #' specified table are returned. Otherwise, each indicator ID is safely
 #' quoted using `DBI::dbQuoteLiteral()` and added to a
 #' `WHERE indicator_id IN (...)` clause.
@@ -63,7 +77,7 @@
 #' \itemize{
 #'   \item `DBI::Id()` - creates a database table identifier.
 #'   \item `DBI::dbQuoteIdentifier()` - safely quotes the database table
-#'     identifier.
+#'     identifier and selected column names.
 #'   \item `DBI::dbQuoteLiteral()` - safely quotes indicator ID values.
 #'   \item `DBI::dbGetQuery()` - executes the SQL query and returns the result.
 #'   \item `tryCatch()` - handles errors during SQL query construction and
@@ -77,18 +91,38 @@
 #'   \item `normalise_indicator_ids()` - normalises the supplied indicator IDs
 #'     and identifies requests to extract all indicators.
 #' }
+#'
 #' @export
 get_indicators_from_sql <- function(
     conn,
     schema_name,
     table_name,
     database_name = NULL,
-    indicator_ids = NULL
+    indicator_ids = NULL,
+    columns = NULL
 ) {
   
   # Normalise indicator IDs
   
   ids <- normalise_indicator_ids(indicator_ids)
+  
+  # Validate column names
+  
+  if(!is.null(columns)){
+    
+    if(
+      !is.character(columns) ||
+      length(columns) == 0L ||
+      anyNA(columns)
+    ){
+      stop(
+        "`columns` must be NULL or a character vector of column names.",
+        call. = FALSE
+      )
+    }
+    
+    columns <- unique(columns)
+  }
   
   tryCatch(
     {
@@ -118,10 +152,31 @@ get_indicators_from_sql <- function(
       )
       
       
+      # Create SELECT clause
+      
+      if(is.null(columns)){
+        
+        select_clause <- "*"
+        
+      } else{
+        
+        quoted_columns <- DBI::dbQuoteIdentifier(
+          conn,
+          columns
+        )
+        
+        select_clause <- paste(
+          quoted_columns,
+          collapse = ", "
+        )
+      }
+      
       # Create base query
       
       sql_query <- paste0(
-        "SELECT * FROM ",
+        "SELECT ",
+        select_clause,
+        " FROM ",
         quoted_table
       )
       

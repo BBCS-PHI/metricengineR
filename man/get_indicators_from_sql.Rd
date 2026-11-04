@@ -9,7 +9,8 @@ get_indicators_from_sql(
   schema_name,
   table_name,
   database_name = NULL,
-  indicator_ids = NULL
+  indicator_ids = NULL,
+  columns = NULL
 )
 }
 \arguments{
@@ -39,29 +40,43 @@ valid indicator IDs to extract. Accepted values include:
 }
 
 \code{"All"} must be supplied on its own. Defaults to \code{NULL}.}
+
+\item{columns}{An optional character vector containing the names of columns
+to extract from the SQL table. If \code{NULL}, all columns are extracted.
+For example, \code{c("indicator_id", "start_date", "numerator")}.
+Defaults to \code{NULL}.}
 }
 \value{
-A data frame containing the records returned by the SQL query.
-On successful execution, messages are printed confirming that the
+A data frame containing the records and columns returned by the SQL
+query. On successful execution, messages are printed confirming that the
 extraction completed and reporting the total number of rows extracted.
 }
 \description{
 Extracts indicator data from a SQL database table using an existing
 database connection. The function can return all indicators or filter
-the data to a specified set of indicator IDs.
+the data to a specified set of indicator IDs. All columns can be returned,
+or extraction can be restricted to a specified set of columns.
 }
 \details{
-The function first validates \code{indicator_ids} to ensure that the supplied
-values are either numeric or character.
+The function first normalises \code{indicator_ids} using
+\code{normalise_indicator_ids()}.
 
-A SQL table identifier is then created using \code{DBI::Id()}. When
-\code{database_name} is supplied, the identifier contains the database, schema,
-and table. When \code{database_name} is \code{NULL}, only the schema and table are
-used.
+If \code{columns} is supplied, it must be a non-empty character vector without
+missing values. Duplicate column names are removed before the SQL query is
+constructed.
+
+A SQL table identifier is created using \code{DBI::Id()}. When \code{database_name}
+is supplied, the identifier contains the database, schema, and table. When
+\code{database_name} is \code{NULL}, only the schema and table are used.
 
 The table identifier is safely quoted using \code{DBI::dbQuoteIdentifier()}.
 
-If \code{indicator_ids} is \code{NULL} or equal to \code{"All"}, all rows from the
+If \code{columns} is \code{NULL}, the SQL query uses \verb{SELECT *} and all columns are
+returned. Otherwise, the supplied column names are safely quoted using
+\code{DBI::dbQuoteIdentifier()} and only those columns are included in the
+\code{SELECT} clause.
+
+If \code{indicator_ids} is \code{NULL} or equal to \code{"All"}, all indicators from the
 specified table are returned. Otherwise, each indicator ID is safely
 quoted using \code{DBI::dbQuoteLiteral()} and added to a
 \verb{WHERE indicator_id IN (...)} clause.
@@ -79,7 +94,7 @@ This function uses:
 \itemize{
 \item \code{DBI::Id()} - creates a database table identifier.
 \item \code{DBI::dbQuoteIdentifier()} - safely quotes the database table
-identifier.
+identifier and selected column names.
 \item \code{DBI::dbQuoteLiteral()} - safely quotes indicator ID values.
 \item \code{DBI::dbGetQuery()} - executes the SQL query and returns the result.
 \item \code{tryCatch()} - handles errors during SQL query construction and

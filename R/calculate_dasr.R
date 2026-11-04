@@ -86,6 +86,7 @@ calculate_dasr <- function(
     )
   }
   
+  # Required columns from age metadata 
   required_age_cols <- c(
     "indicator_id",
     "single_age_code"
@@ -159,6 +160,7 @@ calculate_dasr <- function(
     )
   
   # Prepare DASR rows
+  
   df_calc <- df |>
     dplyr::filter(
       .data[[value_type_code_col]] == 4L
@@ -172,6 +174,7 @@ calculate_dasr <- function(
       esp2013_lookup,
       by = "age_group_code"
     )
+
   
   # Return empty result if there are no DASR rows
   if(nrow(df_calc) == 0){
@@ -268,7 +271,14 @@ calculate_dasr <- function(
   
   output <- dplyr::bind_rows(
     output_list
-  )
+    ) |>  dplyr::rename_with(
+    ~ numerator_col,
+    dplyr::all_of("total_count")
+  ) |>
+    dplyr::rename_with(
+      ~ denominator_col,
+      dplyr::all_of("total_pop")
+    )
   
   # Remove confidence intervals when not required
   if(!confidence_intervals_required){

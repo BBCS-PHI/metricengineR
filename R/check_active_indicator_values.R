@@ -1,6 +1,8 @@
 #' Check Active Indicator Values
 #'
-#' Checks that active indicators have a populated `indicator_value`.
+#' Checks that active indicators have a populated `indicator_value`, excluding
+#' cases where a value cannot be calculated because the numerator or denominator
+#' is unavailable.
 #'
 #' @param df A data frame containing indicator results, including
 #'   `indicator_id`, `indicator_value`, `value_type_code`, `numerator`,
@@ -9,14 +11,21 @@
 #'   and `precalculated`.
 #'
 #' @return A data frame containing active indicator rows with unexpected
-#'   missing `indicator_value`. Returns an empty data frame if no issues are found.
+#'   missing `indicator_value`. Returns an empty data frame if no issues are
+#'   found.
 #'
 #' @details
 #' Indicators with `status_code == 1` are treated as active.
 #'
-#' Missing `indicator_value` is allowed for value types `2`, `9`, and `10`
-#' when the numerator or denominator is missing, or when the denominator
-#' is equal to zero.
+#' For calculated indicators, a missing `indicator_value` is treated as
+#' expected when either the numerator or denominator is missing, or when the
+#' denominator is equal to zero. These rows are considered incalculable rather
+#' than data quality failures.
+#'
+#' This includes calculation methods that intentionally return missing values
+#' when calculation requirements are not met. For example, a directly
+#' age-standardised rate may return a missing result when the underlying event
+#' count is insufficient for calculation.
 #'
 #' Missing `indicator_value` is also allowed for precalculated indicators,
 #' as published values may be unavailable or suppressed at source.
@@ -24,7 +33,7 @@
 #' @export
 check_active_indicator_values <- function(df, metadata) {
   
-  # Validate inputs 
+  # Validate inputs
   
   if(!is.data.frame(df)){
     stop(
@@ -58,7 +67,10 @@ check_active_indicator_values <- function(df, metadata) {
     stop(
       paste0(
         "Missing required columns in `df`: ",
-        paste(missing_df_cols, collapse = ", ")
+        paste(
+          missing_df_cols,
+          collapse = ", "
+        )
       ),
       call. = FALSE
     )
@@ -80,14 +92,17 @@ check_active_indicator_values <- function(df, metadata) {
     stop(
       paste0(
         "Missing required columns in `metadata`: ",
-        paste(missing_metadata_cols, collapse = ", ")
+        paste(
+          missing_metadata_cols,
+          collapse = ", "
+        )
       ),
       call. = FALSE
     )
   }
   
   
-  # Identify active indicators 
+  # Identify active indicators
   
   active_ids <- metadata |>
     dplyr::filter(
@@ -115,34 +130,38 @@ check_active_indicator_values <- function(df, metadata) {
     )
   
   
-  # Identify unexpected missing indicator values 
+  # Identify unexpected missing indicator values
   
   failures <- df |>
     dplyr::filter(
+      
+      # Only active indicators
       .data$indicator_id %in% active_ids,
+      
+      # Indicator value is missing
       is.na(.data$indicator_value),
       
-      # Precalculated values may be unavailable or suppressed
+      # Precalculated values may be unavailable or suppressed at source
       !(.data$indicator_id %in% precalculated_ids),
       
-      # Expected missing calculated values
+      # Calculated values may legitimately be missing when
+      # the required inputs are unavailable
       !(
-        .data$value_type_code %in% c(2L, 9L, 10L) &
-          (
-            is.na(.data$numerator) |
-              is.na(.data$denominator) |
-              .data$denominator == 0
-          )
+        is.na(.data$numerator) |
+          is.na(.data$denominator) |
+          .data$denominator == 0
       )
     )
   
-  
-  # Report result 
+  # Report result
   
   if(nrow(failures) == 0L){
     
     cli::cli_alert_success(
-      "All active indicators have a populated indicator_value, excluding expected missing values."
+      paste0(
+        "All active indicators have a populated indicator_value, ",
+        "excluding expected missing values."
+      )
     )
     
   } else {
@@ -168,7 +187,7 @@ check_active_indicator_values <- function(df, metadata) {
   }
   
   
-  # Return failing rows 
+  # Return failing rows
   
   failures
 }
