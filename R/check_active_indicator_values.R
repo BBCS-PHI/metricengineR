@@ -153,11 +153,10 @@ check_active_indicator_values <- function(df, metadata) {
           .data$denominator == 0
       ),
       
-      # For DASR, numerator < 10 is expected to have NULL indicator value
+      # For DASR, numerator < 10 is expected to have a missing indicator value
       !(.data$value_type_code == 4L &
-        .data$numerator < 10 |
-          is.na(.data$denominator) |
-          .data$denominator == 0)
+        .data$numerator < 10 
+      )
         
     )
   
