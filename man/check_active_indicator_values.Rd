@@ -28,7 +28,8 @@ is unavailable.
 Indicators with \code{status_code == 1} are treated as active.
 
 For calculated indicators, a missing \code{indicator_value} is treated as
-expected when either the numerator or denominator is missing, or when the
+expected when either the numerator or denominator is missing, or when the numerator is less than 10 for
+directly age-standardised rates indicators or when the
 denominator is equal to zero. These rows are considered incalculable rather
 than data quality failures.
 

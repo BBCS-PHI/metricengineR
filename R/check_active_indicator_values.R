@@ -18,7 +18,8 @@
 #' Indicators with `status_code == 1` are treated as active.
 #'
 #' For calculated indicators, a missing `indicator_value` is treated as
-#' expected when either the numerator or denominator is missing, or when the
+#' expected when either the numerator or denominator is missing, or when the numerator is less than 10 for
+#' directly age-standardised rates indicators or when the
 #' denominator is equal to zero. These rows are considered incalculable rather
 #' than data quality failures.
 #'
@@ -150,7 +151,14 @@ check_active_indicator_values <- function(df, metadata) {
         is.na(.data$numerator) |
           is.na(.data$denominator) |
           .data$denominator == 0
-      )
+      ),
+      
+      # For DASR, numerator < 10 is expected to have NULL indicator value
+      !(.data$value_type_code == 4L &
+        .data$numerator < 10 |
+          is.na(.data$denominator) |
+          .data$denominator == 0)
+        
     )
   
   # Report result
