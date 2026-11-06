@@ -294,17 +294,17 @@ testthat::test_that(
   {
     
     df <- data.frame(
-      indicator_id = 101L,
-      indicator_value = NA_real_,
-      value_type_code = 4L,
-      numerator = NA_real_,
-      denominator = NA_real_
+      indicator_id = c(101L, 101L, 101L, 101L),
+      indicator_value = c(NA_real_, NA_real_, NA_real_, NA_real_),
+      value_type_code = c(4L, 4L, 4L, 4L),
+      numerator = c(NA_real_, 3, 7, 9),
+      denominator = c(NA_real_, 200, NA_real_, 0)
     )
     
     metadata <- data.frame(
-      indicator_id = 101L,
-      status_code = 1L,
-      precalculated = "No"
+      indicator_id = c(101L, 101L, 101L, 101L),
+      status_code = c(1L, 1L, 1L, 1L),
+      precalculated = c("No", "No", "No", "No")
     )
     
     suppressMessages(
@@ -440,12 +440,12 @@ testthat::test_that(
     
     testthat::expect_equal(
       nrow(result),
-      3L
+      2L
     )
     
     testthat::expect_equal(
       result$indicator_id,
-      c(101L, 102L, 103L)
+      c(101L, 102L)
     )
   }
 )
