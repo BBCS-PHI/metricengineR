@@ -54,8 +54,25 @@ testthat::test_that(
   }
 )
 
+# Test 4: Two-year pooled period is identified 
 
-# Test 4: Three-year pooled period is identified 
+testthat::test_that(
+  "derive_time_period_type identifies three-year pooled periods",
+  {
+    
+    result <- derive_time_period_type(
+      start_date = as.Date("2020-01-01"),
+      end_date = as.Date("2021-12-31")
+    )
+    
+    testthat::expect_equal(
+      result,
+      "2 year pooled"
+    )
+  }
+)
+
+# Test 5: Three-year pooled period is identified 
 
 testthat::test_that(
   "derive_time_period_type identifies three-year pooled periods",
@@ -74,7 +91,7 @@ testthat::test_that(
 )
 
 
-# Test 5: Five-year pooled period is identified 
+# Test 6: Five-year pooled period is identified 
 
 testthat::test_that(
   "derive_time_period_type identifies five-year pooled periods",
@@ -93,7 +110,7 @@ testthat::test_that(
 )
 
 
-# Test 6: Anniversary date is accepted 
+# Test 7: Anniversary date is accepted 
 
 testthat::test_that(
   "derive_time_period_type accepts anniversary end dates",
