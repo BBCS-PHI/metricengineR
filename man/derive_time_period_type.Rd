@@ -7,13 +7,16 @@
 derive_time_period_type(start_date, end_date)
 }
 \arguments{
-\item{start_date}{A Date vector containing the start date of each period.}
+\item{start_date}{A Date vector containing the start date of each reporting
+period.}
 
-\item{end_date}{A Date vector containing the end date of each period.}
+\item{end_date}{A Date vector containing the end date of each reporting
+period.}
 }
 \value{
 A character vector containing the derived time period type.
-Periods that do not match one of the supported types return \code{NA}.
+Periods that do not match one of the supported time period types return
+\code{NA}.
 }
 \description{
 Classifies a date range into a standard metric-engine time period type based
@@ -23,15 +26,29 @@ on the difference between \code{start_date} and \code{end_date}.
 Supported time period types are:
 
 \itemize{
-\item \code{"Monthly"}
-\item \code{"Quarterly"}
-\item \code{"1 year"}
-\item \code{"3 year pooled"}
-\item \code{"5 year pooled"}
+\item \code{"Monthly"} - a one-month reporting period.
+\item \code{"Quarterly"} - a three-month reporting period.
+\item \code{"1 year"} - a one-year reporting period.
+\item \code{"2 year pooled"} - a reporting period covering two consecutive years.
+\item \code{"3 year pooled"} - a reporting period covering three consecutive years.
+\item \code{"5 year pooled"} - a reporting period covering five consecutive years.
 }
 
+Time period type is derived from the actual duration between \code{start_date}
+and \code{end_date}.
+
 The function accepts periods ending either on the anniversary date or one
-day before the anniversary date.
+day before the anniversary date. This allows standard reporting periods such
+as \code{2024-01-01} to \code{2024-12-31} to be classified as \code{"1 year"}.
+
+Pooled periods are classified according to their actual duration. For
+example:
+
+\itemize{
+\item \code{2020-01-01} to \code{2021-12-31} is \code{"2 year pooled"}.
+\item \code{2020-01-01} to \code{2022-12-31} is \code{"3 year pooled"}.
+\item \code{2020-01-01} to \code{2024-12-31} is \code{"5 year pooled"}.
+}
 }
 \examples{
 derive_time_period_type(
@@ -42,6 +59,16 @@ derive_time_period_type(
 derive_time_period_type(
   start_date = as.Date("2024-01-01"),
   end_date = as.Date("2024-03-31")
+)
+
+derive_time_period_type(
+  start_date = as.Date("2020-01-01"),
+  end_date = as.Date("2021-12-31")
+)
+
+derive_time_period_type(
+  start_date = as.Date("2020-01-01"),
+  end_date = as.Date("2022-12-31")
 )
 
 }
